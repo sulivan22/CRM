@@ -1,13 +1,16 @@
 import { parseClientEnv } from '@crm/config';
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const isFormData = init?.body instanceof FormData;
   const response = await fetch(`${apiBaseUrl()}${path}`, {
     ...init,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers
-    }
+    headers: isFormData
+      ? init?.headers
+      : {
+          'Content-Type': 'application/json',
+          ...init?.headers,
+        },
   });
 
   if (!response.ok) {
@@ -25,7 +28,7 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
 function apiBaseUrl() {
   return parseClientEnv({
     ...process.env,
-    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001'
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001',
   }).NEXT_PUBLIC_API_BASE_URL;
 }
 

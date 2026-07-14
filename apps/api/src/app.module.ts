@@ -8,19 +8,27 @@ import { HealthService } from './health/health.service.js';
 import { PrismaService } from './prisma.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { WorkspacesModule } from './workspaces/workspaces.module.js';
+import { OrganizationsModule } from './organizations/organizations.module.js';
+import { PeopleModule } from './people/people.module.js';
+import { TagsModule } from './tags/tags.module.js';
+import { ImportsModule } from './imports/imports.module.js';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot([
       {
         ttl: 60_000,
-        limit: 100
-      }
+        limit: 100,
+      },
     ]),
     AuthModule,
-    WorkspacesModule
+    WorkspacesModule,
+    OrganizationsModule,
+    PeopleModule,
+    TagsModule,
+    ImportsModule,
   ],
   controllers: [HealthController],
-  providers: [serverEnvProvider, PrismaService, HealthService, JsonLogger, AllExceptionsFilter]
+  providers: [serverEnvProvider, PrismaService, HealthService, JsonLogger, AllExceptionsFilter],
 })
 export class AppModule {}

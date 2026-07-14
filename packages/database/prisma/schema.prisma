@@ -9,16 +9,6 @@ datasource db {
   extensions = [vector]
 }
 
-model SystemHealth {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("system_health")
-}
-
 enum UserStatus {
   ACTIVE
   DISABLED
@@ -42,36 +32,90 @@ enum MembershipStatus {
   SUSPENDED
 }
 
+enum OrganizationType {
+  COMPANY
+  AGENCY
+  CREATOR_NETWORK
+  NONPROFIT
+  OTHER
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PersonStatus {
+  ACTIVE
+  ARCHIVED
+  DO_NOT_CONTACT
+}
+
+enum PersonSource {
+  MANUAL
+  IMPORT
+}
+
+enum CommunicationChannelType {
+  EMAIL
+  LINKEDIN
+  X
+  INSTAGRAM
+  TIKTOK
+  YOUTUBE
+  WEBSITE
+  PHONE
+  OTHER
+}
+
+enum CommunicationChannelStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ImportJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model User {
-  id              String                @id @default(uuid()) @db.Uuid
-  email           String                @unique
-  passwordHash    String
-  displayName     String?
-  status          UserStatus            @default(ACTIVE)
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  memberships     WorkspaceMembership[]
-  sessions        Session[]
-  createdWorkspaces Workspace[]         @relation("WorkspaceCreator")
-  auditLogs       AuditLog[]
+  id                String                @id @default(uuid()) @db.Uuid
+  email             String                @unique
+  passwordHash      String
+  displayName       String?
+  status            UserStatus            @default(ACTIVE)
+  emailVerifiedAt   DateTime?
+  lastLoginAt       DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  memberships       WorkspaceMembership[]
+  sessions          Session[]
+  createdWorkspaces Workspace[]           @relation("WorkspaceCreator")
+  auditLogs         AuditLog[]
+  peopleImportJobs  ImportJob[]           @relation("ImportJobCreator")
 
   @@map("users")
 }
 
 model Workspace {
-  id              String                @id @default(uuid()) @db.Uuid
-  name            String
-  slug            String                @unique
-  status          WorkspaceStatus       @default(ACTIVE)
-  createdByUserId String                @db.Uuid
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  createdBy       User                  @relation("WorkspaceCreator", fields: [createdByUserId], references: [id])
-  memberships     WorkspaceMembership[]
-  activeSessions  Session[]             @relation("ActiveWorkspace")
-  auditLogs       AuditLog[]
+  id                    String                 @id @default(uuid()) @db.Uuid
+  name                  String
+  slug                  String                 @unique
+  status                WorkspaceStatus        @default(ACTIVE)
+  createdByUserId       String                 @db.Uuid
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  createdBy             User                   @relation("WorkspaceCreator", fields: [createdByUserId], references: [id])
+  memberships           WorkspaceMembership[]
+  activeSessions        Session[]              @relation("ActiveWorkspace")
+  auditLogs             AuditLog[]
+  organizations         Organization[]
+  people                Person[]
+  communicationChannels CommunicationChannel[]
+  tags                  Tag[]
+  importJobs            ImportJob[]
 
   @@index([createdByUserId])
   @@map("workspaces")
@@ -118,20 +162,159 @@ model Session {
 }
 
 model AuditLog {
-  id           String     @id @default(uuid()) @db.Uuid
-  workspaceId  String?    @db.Uuid
-  actorUserId  String?    @db.Uuid
-  action       String
-  entityType   String
-  entityId     String?
-  metadata     Json       @default("{}")
-  createdAt    DateTime   @default(now())
-  workspace    Workspace? @relation(fields: [workspaceId], references: [id])
-  actor        User?      @relation(fields: [actorUserId], references: [id])
+  id          String     @id @default(uuid()) @db.Uuid
+  workspaceId String?    @db.Uuid
+  actorUserId String?    @db.Uuid
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json       @default("{}")
+  createdAt   DateTime   @default(now())
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+  actor       User?      @relation(fields: [actorUserId], references: [id])
 
   @@index([workspaceId])
   @@index([actorUserId])
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model Organization {
+  id             String             @id @default(uuid()) @db.Uuid
+  workspaceId    String             @db.Uuid
+  name           String
+  normalizedName String
+  type           OrganizationType   @default(COMPANY)
+  website        String?
+  countryCode    String?
+  description    String?
+  status         OrganizationStatus @default(ACTIVE)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  workspace      Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  people         Person[]
+
+  @@unique([workspaceId, normalizedName])
+  @@index([workspaceId, status])
+  @@index([workspaceId, type])
+  @@index([workspaceId, countryCode])
+  @@map("organizations")
+}
+
+model Person {
+  id             String                 @id @default(uuid()) @db.Uuid
+  workspaceId    String                 @db.Uuid
+  organizationId String?                @db.Uuid
+  firstName      String?
+  lastName       String?
+  displayName    String
+  jobTitle       String?
+  countryCode    String?
+  languageCode   String?
+  followerCount  Int?
+  status         PersonStatus           @default(ACTIVE)
+  source         PersonSource           @default(MANUAL)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  workspace      Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  organization   Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  channels       CommunicationChannel[]
+  tags           PersonTag[]
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, organizationId])
+  @@index([workspaceId, countryCode])
+  @@index([workspaceId, languageCode])
+  @@index([workspaceId, followerCount])
+  @@map("people")
+}
+
+model CommunicationChannel {
+  id              String                     @id @default(uuid()) @db.Uuid
+  workspaceId     String                     @db.Uuid
+  personId        String                     @db.Uuid
+  type            CommunicationChannelType
+  value           String
+  normalizedValue String
+  isPrimary       Boolean                    @default(false)
+  status          CommunicationChannelStatus @default(ACTIVE)
+  metadata        Json                       @default("{}")
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  workspace       Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  person          Person                     @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([personId, type, normalizedValue])
+  @@unique([workspaceId, type, normalizedValue])
+  @@index([workspaceId, status])
+  @@index([personId, status])
+  @@map("communication_channels")
+}
+
+model Tag {
+  id             String      @id @default(uuid()) @db.Uuid
+  workspaceId    String      @db.Uuid
+  name           String
+  normalizedName String
+  color          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  workspace      Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  people         PersonTag[]
+
+  @@unique([workspaceId, normalizedName])
+  @@index([workspaceId])
+  @@map("tags")
+}
+
+model PersonTag {
+  personId  String   @db.Uuid
+  tagId     String   @db.Uuid
+  createdAt DateTime @default(now())
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([personId, tagId])
+  @@index([tagId])
+  @@map("person_tags")
+}
+
+model ImportJob {
+  id               String           @id @default(uuid()) @db.Uuid
+  workspaceId      String           @db.Uuid
+  createdByUserId  String           @db.Uuid
+  type             String
+  status           ImportJobStatus  @default(QUEUED)
+  originalFilename String
+  totalRows        Int              @default(0)
+  processedRows    Int              @default(0)
+  succeededRows    Int              @default(0)
+  failedRows       Int              @default(0)
+  mapping          Json
+  summary          Json?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  completedAt      DateTime?
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy        User             @relation("ImportJobCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  rowErrors        ImportRowError[]
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@map("import_jobs")
+}
+
+model ImportRowError {
+  id          String    @id @default(uuid()) @db.Uuid
+  importJobId String    @db.Uuid
+  rowNumber   Int
+  errorCode   String
+  message     String
+  rawRow      Json
+  createdAt   DateTime  @default(now())
+  importJob   ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  @@index([importJobId, rowNumber])
+  @@map("import_row_errors")
 }

@@ -10,6 +10,7 @@ RUN corepack enable
 COPY . .
 
 RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @crm/database db:generate
 RUN pnpm --filter @crm/worker build
 
 USER node

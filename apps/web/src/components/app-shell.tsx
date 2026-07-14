@@ -26,7 +26,7 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
     try {
       const next = await apiRequest<AuthState>('/auth/switch-workspace', {
         method: 'POST',
-        body: JSON.stringify({ workspaceId })
+        body: JSON.stringify({ workspaceId }),
       });
       setState(next);
     } catch (switchError) {
@@ -63,6 +63,9 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
           </select>
           <a className="text-sm font-medium text-slate-700" href="/app/workspaces">
             Workspaces
+          </a>
+          <a className="text-sm font-medium text-slate-700" href="/app/people">
+            People
           </a>
           <Button type="button" variant="outline" onClick={() => void logout()}>
             Logout
