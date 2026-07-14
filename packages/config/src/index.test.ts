@@ -20,4 +20,16 @@ describe('environment validation', () => {
 
     expect(env).toEqual({ NEXT_PUBLIC_API_BASE_URL: 'http://localhost:3001' });
   });
+
+  it('parses string booleans predictably', () => {
+    const env = parseServerEnv({
+      DATABASE_URL: 'postgresql://crm:crm_password@localhost:5432/crm',
+      REDIS_URL: 'redis://localhost:6379',
+      API_SWAGGER_ENABLED: 'false',
+      AUTH_COOKIE_SECURE: 'false'
+    });
+
+    expect(env.API_SWAGGER_ENABLED).toBe(false);
+    expect(env.AUTH_COOKIE_SECURE).toBe(false);
+  });
 });
