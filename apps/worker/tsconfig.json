@@ -1,0 +1,8 @@
+{
+  "extends": "@crm/tsconfig/nest.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "."
+  },
+  "include": ["src", "test"]
+}
