@@ -10,8 +10,8 @@ const user = await prisma.user.upsert({
   create: {
     email,
     passwordHash,
-    displayName: 'Development User'
-  }
+    displayName: 'Development User',
+  },
 });
 
 const workspace = await prisma.workspace.upsert({
@@ -20,28 +20,219 @@ const workspace = await prisma.workspace.upsert({
   create: {
     name: 'Development Workspace',
     slug: 'development-workspace',
-    createdByUserId: user.id
-  }
+    createdByUserId: user.id,
+  },
 });
 
 await prisma.workspaceMembership.upsert({
   where: {
     workspaceId_userId: {
       workspaceId: workspace.id,
-      userId: user.id
-    }
+      userId: user.id,
+    },
   },
   update: {
     role: 'OWNER',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
   },
   create: {
     workspaceId: workspace.id,
     userId: user.id,
     role: 'OWNER',
     status: 'ACTIVE',
-    joinedAt: new Date()
+    joinedAt: new Date(),
+  },
+});
+
+const organization = await prisma.organization.upsert({
+  where: {
+    workspaceId_normalizedName: {
+      workspaceId: workspace.id,
+      normalizedName: 'northstar media',
+    },
+  },
+  update: {},
+  create: {
+    workspaceId: workspace.id,
+    name: 'Northstar Media',
+    normalizedName: 'northstar media',
+    type: 'AGENCY',
+    website: 'https://northstar.example',
+    countryCode: 'US',
+  },
+});
+
+const creatorTag = await prisma.tag.upsert({
+  where: {
+    workspaceId_normalizedName: {
+      workspaceId: workspace.id,
+      normalizedName: 'creator',
+    },
+  },
+  update: {},
+  create: {
+    workspaceId: workspace.id,
+    name: 'Creator',
+    normalizedName: 'creator',
+    color: '#2563eb',
+  },
+});
+
+const vipTag = await prisma.tag.upsert({
+  where: {
+    workspaceId_normalizedName: {
+      workspaceId: workspace.id,
+      normalizedName: 'vip',
+    },
+  },
+  update: {},
+  create: {
+    workspaceId: workspace.id,
+    name: 'VIP',
+    normalizedName: 'vip',
+    color: '#16a34a',
+  },
+});
+
+async function upsertSeedPerson(input: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+  countryCode: string;
+  languageCode: string;
+  followerCount: number;
+  secondaryChannel: {
+    type: 'LINKEDIN' | 'X';
+    value: string;
+    normalizedValue: string;
+  };
+  tagIds: string[];
+}) {
+  const existingChannel = await prisma.communicationChannel.findFirst({
+    where: {
+      workspaceId: workspace.id,
+      type: 'EMAIL',
+      normalizedValue: input.email,
+    },
+    include: { person: true },
+  });
+
+  const person =
+    existingChannel?.person ??
+    (await prisma.person.create({
+      data: {
+        workspaceId: workspace.id,
+        displayName: `${input.firstName} ${input.lastName}`,
+      },
+    }));
+
+  await prisma.person.update({
+    where: { id: person.id },
+    data: {
+      organizationId: organization.id,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      displayName: `${input.firstName} ${input.lastName}`,
+      jobTitle: input.jobTitle,
+      countryCode: input.countryCode,
+      languageCode: input.languageCode,
+      followerCount: input.followerCount,
+      source: 'MANUAL',
+    },
+  });
+
+  await prisma.communicationChannel.upsert({
+    where: {
+      personId_type_normalizedValue: {
+        personId: person.id,
+        type: 'EMAIL',
+        normalizedValue: input.email,
+      },
+    },
+    update: {
+      value: input.email,
+      isPrimary: true,
+      status: 'ACTIVE',
+    },
+    create: {
+      workspaceId: workspace.id,
+      personId: person.id,
+      type: 'EMAIL',
+      value: input.email,
+      normalizedValue: input.email,
+      isPrimary: true,
+    },
+  });
+
+  await prisma.communicationChannel.upsert({
+    where: {
+      personId_type_normalizedValue: {
+        personId: person.id,
+        type: input.secondaryChannel.type,
+        normalizedValue: input.secondaryChannel.normalizedValue,
+      },
+    },
+    update: {
+      value: input.secondaryChannel.value,
+      status: 'ACTIVE',
+    },
+    create: {
+      workspaceId: workspace.id,
+      personId: person.id,
+      type: input.secondaryChannel.type,
+      value: input.secondaryChannel.value,
+      normalizedValue: input.secondaryChannel.normalizedValue,
+    },
+  });
+
+  for (const tagId of input.tagIds) {
+    await prisma.personTag.upsert({
+      where: {
+        personId_tagId: {
+          personId: person.id,
+          tagId,
+        },
+      },
+      update: {},
+      create: {
+        personId: person.id,
+        tagId,
+      },
+    });
   }
+}
+
+await upsertSeedPerson({
+  email: 'alex.morgan@example.com',
+  firstName: 'Alex',
+  lastName: 'Morgan',
+  jobTitle: 'Creator Partnerships Lead',
+  countryCode: 'US',
+  languageCode: 'en',
+  followerCount: 145000,
+  secondaryChannel: {
+    type: 'LINKEDIN',
+    value: 'https://linkedin.com/in/alexmorgan',
+    normalizedValue: 'linkedin.com/in/alexmorgan',
+  },
+  tagIds: [creatorTag.id, vipTag.id],
+});
+
+await upsertSeedPerson({
+  email: 'jamie.chen@example.com',
+  firstName: 'Jamie',
+  lastName: 'Chen',
+  jobTitle: 'B2B Influencer',
+  countryCode: 'GB',
+  languageCode: 'en',
+  followerCount: 82000,
+  secondaryChannel: {
+    type: 'X',
+    value: '@jamiechen',
+    normalizedValue: 'jamiechen',
+  },
+  tagIds: [creatorTag.id],
 });
 
 await prisma.$disconnect();
