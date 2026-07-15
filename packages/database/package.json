@@ -14,12 +14,14 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:generate": "DATABASE_URL=${DATABASE_URL:-postgresql://crm:crm_password@localhost:5432/crm?schema=public} prisma generate",
+    "db:migrate": "DATABASE_URL=${DATABASE_URL:-postgresql://crm:crm_password@localhost:5432/crm?schema=public} prisma migrate deploy",
+    "db:seed": "DATABASE_URL=${DATABASE_URL:-postgresql://crm:crm_password@localhost:5432/crm?schema=public} tsx prisma/seed.ts",
+    "db:sessions:cleanup": "DATABASE_URL=${DATABASE_URL:-postgresql://crm:crm_password@localhost:5432/crm?schema=public} tsx src/cleanup-expired-sessions.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.1.0"
+    "@prisma/client": "^6.1.0",
+    "argon2": "^0.41.1"
   },
   "devDependencies": {
     "@crm/eslint-config": "workspace:*",
@@ -27,8 +29,5 @@
     "prisma": "^6.1.0",
     "tsx": "^4.19.2",
     "vitest": "^2.1.8"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }

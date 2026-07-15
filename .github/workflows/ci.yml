@@ -41,6 +41,10 @@ jobs:
       API_PORT: 3001
       API_CORS_ORIGIN: http://localhost:3000
       API_SWAGGER_ENABLED: false
+      AUTH_COOKIE_NAME: crm_session
+      AUTH_SESSION_TTL_SECONDS: 604800
+      AUTH_COOKIE_SECURE: false
+      PASSWORD_MIN_LENGTH: 12
       NEXT_PUBLIC_API_BASE_URL: http://localhost:3001
       WORKER_CONCURRENCY: 1
     steps:

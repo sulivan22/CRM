@@ -44,6 +44,11 @@ services:
       API_PORT: 3001
       API_CORS_ORIGIN: ${API_CORS_ORIGIN:-http://localhost:3000}
       API_SWAGGER_ENABLED: ${API_SWAGGER_ENABLED:-true}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-crm_session}
+      AUTH_SESSION_TTL_SECONDS: ${AUTH_SESSION_TTL_SECONDS:-604800}
+      AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-12}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
     ports:
       - "3001:3001"
@@ -80,6 +85,11 @@ services:
       API_PORT: 3001
       API_CORS_ORIGIN: ${API_CORS_ORIGIN:-http://localhost:3000}
       API_SWAGGER_ENABLED: ${API_SWAGGER_ENABLED:-true}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-crm_session}
+      AUTH_SESSION_TTL_SECONDS: ${AUTH_SESSION_TTL_SECONDS:-604800}
+      AUTH_COOKIE_DOMAIN: ${AUTH_COOKIE_DOMAIN:-}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-12}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
     depends_on:
       postgres:
@@ -94,7 +104,7 @@ services:
       context: .
       dockerfile: infrastructure/docker/web/Dockerfile
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001}
       WEB_PORT: 3000
     ports:

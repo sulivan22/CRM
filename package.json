@@ -18,6 +18,7 @@
     "db:generate": "pnpm --filter @crm/database db:generate",
     "db:migrate": "pnpm --filter @crm/database db:migrate",
     "db:seed": "pnpm --filter @crm/database db:seed",
+    "db:sessions:cleanup": "pnpm --filter @crm/database db:sessions:cleanup",
     "prepare": "husky || true"
   },
   "devDependencies": {
