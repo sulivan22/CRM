@@ -10,19 +10,15 @@ describe('WorkspacesService membership protections', () => {
     const prisma = {
       client: {
         workspaceMembership: {
-          count: () => Promise.resolve(0)
-        }
-      }
+          count: () => Promise.resolve(0),
+        },
+      },
     } as unknown as PrismaService;
-    const service = new WorkspacesService(
-      prisma,
-      {} as SlugService,
-      {} as AuditService
-    );
+    const service = new WorkspacesService(prisma, {} as SlugService, {} as AuditService);
 
-    await expect(service.assertNotLastActiveOwner('workspace-id', 'membership-id')).rejects.toBeInstanceOf(
-      BadRequestException
-    );
+    await expect(
+      service.assertNotLastActiveOwner('workspace-id', 'membership-id'),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects admin attempts to modify owner memberships', async () => {
@@ -35,16 +31,12 @@ describe('WorkspacesService membership protections', () => {
               workspaceId: 'workspace-id',
               role: 'OWNER',
               status: 'ACTIVE',
-              user: { id: 'owner-id' }
-            })
-        }
-      }
+              user: { id: 'owner-id' },
+            }),
+        },
+      },
     } as unknown as PrismaService;
-    const service = new WorkspacesService(
-      prisma,
-      {} as SlugService,
-      {} as AuditService
-    );
+    const service = new WorkspacesService(prisma, {} as SlugService, {} as AuditService);
 
     await expect(
       service.updateMembership({
@@ -52,8 +44,8 @@ describe('WorkspacesService membership protections', () => {
         actorRole: 'ADMIN',
         workspaceId: 'workspace-id',
         membershipId: 'membership-id',
-        role: 'MEMBER'
-      })
+        role: 'MEMBER',
+      }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

@@ -5,7 +5,7 @@ import { SERVER_ENV } from './worker-env.js';
 import {
   type BootstrapJobData,
   type BootstrapJobResult,
-  processBootstrapJob
+  processBootstrapJob,
 } from './bootstrap-processor.js';
 
 @Injectable()
@@ -18,18 +18,18 @@ export class BootstrapQueueService implements OnModuleInit, OnModuleDestroy {
   constructor(@Inject(SERVER_ENV) private readonly env: ServerEnv) {
     this.connection = {
       ...getRedisConnection(env),
-      maxRetriesPerRequest: null
+      maxRetriesPerRequest: null,
     };
     this.queue = new Queue<BootstrapJobData, BootstrapJobResult, 'bootstrap.test'>('bootstrap', {
-      connection: this.connection
+      connection: this.connection,
     });
     this.worker = new Worker<BootstrapJobData, BootstrapJobResult, 'bootstrap.test'>(
       'bootstrap',
       (job: Job<BootstrapJobData>) => Promise.resolve(processBootstrapJob(job)),
       {
         connection: this.connection,
-        concurrency: env.WORKER_CONCURRENCY
-      }
+        concurrency: env.WORKER_CONCURRENCY,
+      },
     );
   }
 
@@ -40,7 +40,7 @@ export class BootstrapQueueService implements OnModuleInit, OnModuleDestroy {
 
     this.worker.on('failed', (job, error) => {
       this.logger.error(
-        JSON.stringify({ queue: 'bootstrap', jobId: job?.id, error: error.message })
+        JSON.stringify({ queue: 'bootstrap', jobId: job?.id, error: error.message }),
       );
     });
 
@@ -55,11 +55,11 @@ export class BootstrapQueueService implements OnModuleInit, OnModuleDestroy {
         attempts: 3,
         backoff: {
           type: 'exponential',
-          delay: 1_000
+          delay: 1_000,
         },
         removeOnComplete: true,
-        removeOnFail: 100
-      }
+        removeOnFail: 100,
+      },
     );
   }
 

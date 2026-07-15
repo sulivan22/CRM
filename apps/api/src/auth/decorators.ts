@@ -20,4 +20,5 @@ export const CurrentMembership = createParamDecorator((_data: unknown, ctx: Exec
   return request.currentMembership;
 });
 
-export const WorkspaceRoles = (...roles: WorkspaceRole[]) => SetMetadata(WORKSPACE_ROLES_KEY, roles);
+export const WorkspaceRoles = (...roles: WorkspaceRole[]) =>
+  SetMetadata(WORKSPACE_ROLES_KEY, roles);

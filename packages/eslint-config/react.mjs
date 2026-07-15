@@ -9,22 +9,22 @@ export const reactConfig = [
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       globals: {
-        ...globals.browser
-      }
+        ...globals.browser,
+      },
     },
     plugins: {
       react,
-      'react-hooks': reactHooks
+      'react-hooks': reactHooks,
     },
     settings: {
       react: {
-        version: 'detect'
-      }
+        version: 'detect',
+      },
     },
     rules: {
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
-      ...reactHooks.configs.recommended.rules
-    }
-  }
+      ...reactHooks.configs.recommended.rules,
+    },
+  },
 ];

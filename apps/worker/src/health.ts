@@ -7,6 +7,6 @@ console.log(
     service: 'worker',
     status: 'ok',
     redis: `${env.REDIS_HOST}:${env.REDIS_PORT}`,
-    timestamp: new Date().toISOString()
-  })
+    timestamp: new Date().toISOString(),
+  }),
 );

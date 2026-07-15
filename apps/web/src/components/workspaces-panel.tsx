@@ -44,7 +44,7 @@ export function WorkspacesPanel() {
   async function switchWorkspace(workspaceId: string) {
     await apiRequest<AuthState>('/auth/switch-workspace', {
       method: 'POST',
-      body: JSON.stringify({ workspaceId })
+      body: JSON.stringify({ workspaceId }),
     });
     setMessage('Workspace switched.');
   }
@@ -63,7 +63,10 @@ export function WorkspacesPanel() {
       {message ? <p className="text-sm text-slate-700">{message}</p> : null}
       <div className="grid gap-3">
         {workspaces.map((item) => (
-          <article key={item.workspace.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <article
+            key={item.workspace.id}
+            className="rounded-lg border border-slate-200 bg-white p-4"
+          >
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-semibold">{item.workspace.name}</h2>
@@ -71,7 +74,11 @@ export function WorkspacesPanel() {
                   {item.workspace.slug} · {item.role}
                 </p>
               </div>
-              <Button type="button" variant="outline" onClick={() => void switchWorkspace(item.workspace.id)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void switchWorkspace(item.workspace.id)}
+              >
                 Switch
               </Button>
             </div>

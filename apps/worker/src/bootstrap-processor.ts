@@ -9,11 +9,9 @@ export interface BootstrapJobResult {
   requestedBy: string;
 }
 
-export function processBootstrapJob(
-  job: Pick<Job<BootstrapJobData>, 'data'>
-): BootstrapJobResult {
+export function processBootstrapJob(job: Pick<Job<BootstrapJobData>, 'data'>): BootstrapJobResult {
   return {
     processed: true,
-    requestedBy: job.data.requestedBy
+    requestedBy: job.data.requestedBy,
   };
 }

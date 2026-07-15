@@ -12,15 +12,15 @@ describe('health endpoints', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [AppModule]
+      imports: [AppModule],
     })
       .overrideProvider(PrismaService)
       .useValue({
         client: {
           $connect: () => Promise.resolve(undefined),
           $disconnect: () => Promise.resolve(undefined),
-          $queryRaw: () => Promise.resolve([{ ok: 1 }])
-        }
+          $queryRaw: () => Promise.resolve([{ ok: 1 }]),
+        },
       })
       .compile();
 

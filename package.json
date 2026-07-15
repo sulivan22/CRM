@@ -29,13 +29,5 @@
     "prettier": "^3.4.2",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx,mjs,cjs,json,md,css}": [
-      "prettier --write"
-    ],
-    "*.{ts,tsx,js,jsx,mjs,cjs}": [
-      "eslint --fix"
-    ]
   }
 }

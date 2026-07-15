@@ -5,10 +5,10 @@ import type { BootstrapJobData, BootstrapJobResult } from './bootstrap-processor
 const env = parseServerEnv(process.env);
 const connection: ConnectionOptions = {
   ...getRedisConnection(env),
-  maxRetriesPerRequest: null
+  maxRetriesPerRequest: null,
 };
 const queue = new Queue<BootstrapJobData, BootstrapJobResult, 'bootstrap.test'>('bootstrap', {
-  connection
+  connection,
 });
 
 const job = await queue.add(
@@ -18,9 +18,9 @@ const job = await queue.add(
     attempts: 3,
     backoff: {
       type: 'exponential',
-      delay: 1_000
-    }
-  }
+      delay: 1_000,
+    },
+  },
 );
 
 console.log(JSON.stringify({ queued: true, queue: 'bootstrap', jobId: job.id }));

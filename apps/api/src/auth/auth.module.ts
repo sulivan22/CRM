@@ -21,8 +21,15 @@ import { WorkspaceRolesGuard } from './workspace-roles.guard.js';
     AuditService,
     AuthGuard,
     WorkspaceMembershipGuard,
-    WorkspaceRolesGuard
+    WorkspaceRolesGuard,
   ],
-  exports: [AuthGuard, WorkspaceMembershipGuard, WorkspaceRolesGuard, SessionService, AuditService, SlugService]
+  exports: [
+    AuthGuard,
+    WorkspaceMembershipGuard,
+    WorkspaceRolesGuard,
+    SessionService,
+    AuditService,
+    SlugService,
+  ],
 })
 export class AuthModule {}

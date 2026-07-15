@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'CRM Bootstrap',
-  description: 'Operational bootstrap frontend'
+  description: 'Operational bootstrap frontend',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

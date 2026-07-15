@@ -18,8 +18,8 @@ export const baseConfig = [
       '**/postcss.config.mjs',
       '**/tailwind.config.ts',
       '**/eslint.config.mjs',
-      '**/next-env.d.ts'
-    ]
+      '**/next-env.d.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -27,17 +27,17 @@ export const baseConfig = [
   {
     languageOptions: {
       globals: {
-        ...globals.node
+        ...globals.node,
       },
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: import.meta.dirname
-      }
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
-      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }]
-    }
-  }
+      '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
+    },
+  },
 ];
