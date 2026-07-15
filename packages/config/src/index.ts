@@ -19,15 +19,22 @@ export const serverEnvSchema = z.object({
   API_CORS_ORIGIN: z.string().min(1).default('http://localhost:3000'),
   API_SWAGGER_ENABLED: booleanEnvSchema.default(true),
   AUTH_COOKIE_NAME: z.string().min(1).default('crm_session'),
-  AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(60 * 60 * 24 * 7),
+  AUTH_SESSION_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60 * 60 * 24 * 7),
   AUTH_COOKIE_DOMAIN: z.string().optional(),
   AUTH_COOKIE_SECURE: booleanEnvSchema.default(false),
   PASSWORD_MIN_LENGTH: z.coerce.number().int().min(8).default(12),
-  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1)
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(1),
+  AI_PROVIDER: z.enum(['fake']).default('fake'),
+  AI_DEFAULT_MODEL: z.string().min(1).default('fake-v1'),
+  OUTREACH_GENERATION_BATCH_SIZE: z.coerce.number().int().positive().default(25),
 });
 
 export const clientEnvSchema = z.object({
-  NEXT_PUBLIC_API_BASE_URL: z.string().url()
+  NEXT_PUBLIC_API_BASE_URL: z.string().url(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -44,6 +51,6 @@ export function parseClientEnv(env: NodeJS.ProcessEnv): ClientEnv {
 export function getRedisConnection(env: Pick<ServerEnv, 'REDIS_HOST' | 'REDIS_PORT'>) {
   return {
     host: env.REDIS_HOST,
-    port: env.REDIS_PORT
+    port: env.REDIS_PORT,
   };
 }

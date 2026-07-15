@@ -80,6 +80,39 @@ enum ImportJobStatus {
   FAILED
 }
 
+enum OutreachStatus {
+  DRAFT
+  GENERATING
+  READY_FOR_REVIEW
+  APPROVED
+  ARCHIVED
+  FAILED
+}
+
+enum OutreachRecipientStatus {
+  PENDING
+  GENERATED
+  APPROVED
+  EXCLUDED
+  FAILED
+}
+
+enum GeneratedMessageStatus {
+  GENERATED
+  EDITED
+  APPROVED
+  REJECTED
+  FAILED
+}
+
+enum OutreachGenerationJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  COMPLETED_WITH_ERRORS
+  FAILED
+}
+
 model User {
   id                String                @id @default(uuid()) @db.Uuid
   email             String                @unique
@@ -95,27 +128,33 @@ model User {
   createdWorkspaces Workspace[]           @relation("WorkspaceCreator")
   auditLogs         AuditLog[]
   peopleImportJobs  ImportJob[]           @relation("ImportJobCreator")
+  outreach          Outreach[]            @relation("OutreachCreator")
 
   @@map("users")
 }
 
 model Workspace {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  name                  String
-  slug                  String                 @unique
-  status                WorkspaceStatus        @default(ACTIVE)
-  createdByUserId       String                 @db.Uuid
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  createdBy             User                   @relation("WorkspaceCreator", fields: [createdByUserId], references: [id])
-  memberships           WorkspaceMembership[]
-  activeSessions        Session[]              @relation("ActiveWorkspace")
-  auditLogs             AuditLog[]
-  organizations         Organization[]
-  people                Person[]
-  communicationChannels CommunicationChannel[]
-  tags                  Tag[]
-  importJobs            ImportJob[]
+  id                     String                  @id @default(uuid()) @db.Uuid
+  name                   String
+  slug                   String                  @unique
+  status                 WorkspaceStatus         @default(ACTIVE)
+  createdByUserId        String                  @db.Uuid
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  createdBy              User                    @relation("WorkspaceCreator", fields: [createdByUserId], references: [id])
+  memberships            WorkspaceMembership[]
+  activeSessions         Session[]               @relation("ActiveWorkspace")
+  auditLogs              AuditLog[]
+  organizations          Organization[]
+  people                 Person[]
+  communicationChannels  CommunicationChannel[]
+  tags                   Tag[]
+  importJobs             ImportJob[]
+  outreach               Outreach[]
+  outreachRecipients     OutreachRecipient[]
+  outreachInstructions   OutreachInstruction[]
+  generatedMessages      GeneratedMessage[]
+  outreachGenerationJobs OutreachGenerationJob[]
 
   @@index([createdByUserId])
   @@map("workspaces")
@@ -203,24 +242,25 @@ model Organization {
 }
 
 model Person {
-  id             String                 @id @default(uuid()) @db.Uuid
-  workspaceId    String                 @db.Uuid
-  organizationId String?                @db.Uuid
-  firstName      String?
-  lastName       String?
-  displayName    String
-  jobTitle       String?
-  countryCode    String?
-  languageCode   String?
-  followerCount  Int?
-  status         PersonStatus           @default(ACTIVE)
-  source         PersonSource           @default(MANUAL)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  workspace      Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  organization   Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  channels       CommunicationChannel[]
-  tags           PersonTag[]
+  id                 String                 @id @default(uuid()) @db.Uuid
+  workspaceId        String                 @db.Uuid
+  organizationId     String?                @db.Uuid
+  firstName          String?
+  lastName           String?
+  displayName        String
+  jobTitle           String?
+  countryCode        String?
+  languageCode       String?
+  followerCount      Int?
+  status             PersonStatus           @default(ACTIVE)
+  source             PersonSource           @default(MANUAL)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  workspace          Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  organization       Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  channels           CommunicationChannel[]
+  tags               PersonTag[]
+  outreachRecipients OutreachRecipient[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, organizationId])
@@ -317,4 +357,125 @@ model ImportRowError {
 
   @@index([importJobId, rowNumber])
   @@map("import_row_errors")
+}
+
+model Outreach {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  workspaceId         String                  @db.Uuid
+  createdByUserId     String                  @db.Uuid
+  name                String
+  objective           String
+  languageCode        String
+  tone                String
+  length              String
+  status              OutreachStatus          @default(DRAFT)
+  audienceDefinition  Json
+  totalRecipients     Int                     @default(0)
+  generatedRecipients Int                     @default(0)
+  approvedRecipients  Int                     @default(0)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  workspace           Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy           User                    @relation("OutreachCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  recipients          OutreachRecipient[]
+  instruction         OutreachInstruction?
+  generatedMessages   GeneratedMessage[]
+  generationJobs      OutreachGenerationJob[]
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, createdByUserId])
+  @@map("outreach")
+}
+
+model OutreachRecipient {
+  id              String                  @id @default(uuid()) @db.Uuid
+  outreachId      String                  @db.Uuid
+  personId        String                  @db.Uuid
+  workspaceId     String                  @db.Uuid
+  status          OutreachRecipientStatus @default(PENDING)
+  contextSnapshot Json?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  outreach        Outreach                @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+  person          Person                  @relation(fields: [personId], references: [id], onDelete: Cascade)
+  workspace       Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages        GeneratedMessage[]
+
+  @@unique([outreachId, personId])
+  @@index([workspaceId, status])
+  @@index([outreachId, status, createdAt])
+  @@index([workspaceId, outreachId, status])
+  @@index([personId])
+  @@map("outreach_recipients")
+}
+
+model OutreachInstruction {
+  id                String    @id @default(uuid()) @db.Uuid
+  outreachId        String    @unique @db.Uuid
+  workspaceId       String    @db.Uuid
+  objective         String
+  languageCode      String
+  tone              String
+  length            String
+  additionalContext String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  outreach          Outreach  @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("outreach_instructions")
+}
+
+model GeneratedMessage {
+  id                String                 @id @default(uuid()) @db.Uuid
+  outreachId        String                 @db.Uuid
+  recipientId       String                 @db.Uuid
+  workspaceId       String                 @db.Uuid
+  subject           String
+  body              String
+  cta               String?
+  status            GeneratedMessageStatus @default(GENERATED)
+  generationVersion Int
+  provider          String
+  model             String
+  promptSnapshot    Json?
+  outputMetadata    Json?
+  manuallyEdited    Boolean                @default(false)
+  approvedAt        DateTime?
+  active            Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  outreach          Outreach               @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+  recipient         OutreachRecipient      @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([recipientId, generationVersion])
+  @@index([workspaceId, status])
+  @@index([outreachId, active])
+  @@index([recipientId, active])
+  @@map("generated_messages")
+}
+
+model OutreachGenerationJob {
+  id           String                      @id @default(uuid()) @db.Uuid
+  outreachId   String                      @db.Uuid
+  workspaceId  String                      @db.Uuid
+  status       OutreachGenerationJobStatus @default(PENDING)
+  total        Int                         @default(0)
+  processed    Int                         @default(0)
+  succeeded    Int                         @default(0)
+  failed       Int                         @default(0)
+  errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
+  outreach     Outreach                    @relation(fields: [outreachId], references: [id], onDelete: Cascade)
+  workspace    Workspace                   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([outreachId, createdAt])
+  @@map("outreach_generation_jobs")
 }

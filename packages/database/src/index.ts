@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 export * from './people-import.js';
+export * from './outreach.js';
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

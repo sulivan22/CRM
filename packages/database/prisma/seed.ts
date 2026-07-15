@@ -235,4 +235,60 @@ await upsertSeedPerson({
   tagIds: [creatorTag.id],
 });
 
+const seedPeople = await prisma.person.findMany({
+  where: {
+    workspaceId: workspace.id,
+    channels: { some: { type: 'EMAIL', status: 'ACTIVE' } },
+  },
+  take: 2,
+});
+
+if (seedPeople.length > 0) {
+  const outreach = await prisma.outreach.upsert({
+    where: { id: '00000000-0000-4000-8000-000000000003' },
+    update: {
+      totalRecipients: seedPeople.length,
+    },
+    create: {
+      id: '00000000-0000-4000-8000-000000000003',
+      workspaceId: workspace.id,
+      createdByUserId: user.id,
+      name: 'Creator partnership draft',
+      objective: 'Explore a lightweight creator partnership for the next product launch.',
+      languageCode: 'en',
+      tone: 'PROFESSIONAL',
+      length: 'MEDIUM',
+      audienceDefinition: { filters: { hasEmail: true } },
+      totalRecipients: seedPeople.length,
+      instruction: {
+        create: {
+          workspaceId: workspace.id,
+          objective: 'Explore a lightweight creator partnership for the next product launch.',
+          languageCode: 'en',
+          tone: 'PROFESSIONAL',
+          length: 'MEDIUM',
+          additionalContext: 'Development seed outreach.',
+        },
+      },
+    },
+  });
+
+  for (const person of seedPeople) {
+    await prisma.outreachRecipient.upsert({
+      where: {
+        outreachId_personId: {
+          outreachId: outreach.id,
+          personId: person.id,
+        },
+      },
+      update: {},
+      create: {
+        workspaceId: workspace.id,
+        outreachId: outreach.id,
+        personId: person.id,
+      },
+    });
+  }
+}
+
 await prisma.$disconnect();

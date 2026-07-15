@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@crm/ai": "workspace:*",
     "@crm/config": "workspace:*",
     "@crm/database": "workspace:*",
     "bullmq": "^5.34.2",

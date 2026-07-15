@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@crm/ui';
 import { apiRequest, type AuthState } from '@/lib/api';
 
@@ -67,6 +68,9 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
           <a className="text-sm font-medium text-slate-700" href="/app/people">
             People
           </a>
+          <Link className="text-sm font-medium text-slate-700" href="/app/outreach">
+            Outreach
+          </Link>
           <Button type="button" variant="outline" onClick={() => void logout()}>
             Logout
           </Button>
