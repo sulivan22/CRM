@@ -18,6 +18,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 export type { PrismaClient };
 export {
+  AIExecutionStatus,
+  AIInsightType,
   ConversationStatus,
   DeliveryStatus,
   GeneratedMessageStatus,

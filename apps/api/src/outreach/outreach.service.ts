@@ -65,12 +65,16 @@ export class OutreachService implements OnModuleDestroy {
     private readonly prismaService: PrismaService,
     private readonly auditService: AuditService,
   ) {
+    this.aiService = new AIService({
+      provider: env.AI_PROVIDER,
+      model: env.AI_DEFAULT_MODEL,
+      apiKey: env.OPENAI_API_KEY,
+    });
     const connection: ConnectionOptions = {
       ...getRedisConnection(env),
       maxRetriesPerRequest: null,
     };
     this.queue = new Queue(OUTREACH_GENERATION_QUEUE, { connection });
-    this.aiService = new AIService(env);
   }
 
   async resolveAudience(workspaceId: string, audience: AudienceDto) {

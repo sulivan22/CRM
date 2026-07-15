@@ -12,11 +12,15 @@ export class OutreachGenerationWorkerService implements OnModuleInit, OnModuleDe
   private readonly aiService: AIService;
 
   constructor(@Inject(SERVER_ENV) private readonly env: ServerEnv) {
+    this.aiService = new AIService({
+      provider: env.AI_PROVIDER,
+      model: env.AI_DEFAULT_MODEL,
+      apiKey: env.OPENAI_API_KEY,
+    });
     const connection: ConnectionOptions = {
       ...getRedisConnection(env),
       maxRetriesPerRequest: null,
     };
-    this.aiService = new AIService(env);
     this.worker = new Worker(
       OUTREACH_GENERATION_QUEUE,
       (job: Job<{ generationJobId: string }>) =>

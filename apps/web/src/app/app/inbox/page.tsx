@@ -51,6 +51,21 @@ interface DeliveryListResponse {
   }>;
 }
 
+interface AIExecution {
+  id: string;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  errorMessage: string | null;
+}
+
+interface AIInsight {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  confidence: number | null;
+  createdAt: string;
+}
+
 const statuses: Array<ConversationStatus | 'ALL'> = ['OPEN', 'CLOSED', 'ARCHIVED', 'ALL'];
 
 export default function InboxPage() {
@@ -63,6 +78,8 @@ export default function InboxPage() {
   const [deliveryId, setDeliveryId] = useState('');
   const [simulateText, setSimulateText] = useState('Thanks, I am interested.');
   const [error, setError] = useState('');
+  const [aiMessage, setAiMessage] = useState('');
+  const [insights, setInsights] = useState<AIInsight[]>([]);
   const [busy, setBusy] = useState(false);
 
   const workspaceId = auth?.activeWorkspaceId;
@@ -98,6 +115,14 @@ export default function InboxPage() {
     void apiRequest<Conversation>(`/workspaces/${workspaceId}/inbox/${selectedId}`)
       .then(setThread)
       .catch(setRequestError);
+  }, [workspaceId, selectedId]);
+
+  useEffect(() => {
+    if (!workspaceId || !selectedId) {
+      setInsights([]);
+      return;
+    }
+    void loadInsights(workspaceId, selectedId);
   }, [workspaceId, selectedId]);
 
   const selected = useMemo(
@@ -180,6 +205,43 @@ export default function InboxPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function runAI(path: 'summarize' | 'extract' | 'suggest-next-action') {
+    if (!workspaceId || !selectedId) return;
+    setBusy(true);
+    setAiMessage('AI processing queued.');
+    try {
+      const execution = await apiRequest<AIExecution>(`/workspaces/${workspaceId}/ai/${path}`, {
+        method: 'POST',
+        body: JSON.stringify({ conversationId: selectedId }),
+      });
+      await waitForExecution(workspaceId, execution.id);
+      await loadInsights(workspaceId, selectedId);
+      setAiMessage('AI insight ready.');
+    } catch (requestError) {
+      setRequestError(requestError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function waitForExecution(activeWorkspaceId: string, executionId: string) {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const execution = await apiRequest<AIExecution>(
+        `/workspaces/${activeWorkspaceId}/ai/executions/${executionId}`,
+      );
+      if (execution.status === 'COMPLETED') return;
+      if (execution.status === 'FAILED') throw new Error(execution.errorMessage ?? 'AI failed.');
+      await new Promise((resolve) => window.setTimeout(resolve, 500));
+    }
+  }
+
+  async function loadInsights(activeWorkspaceId: string, conversationId: string) {
+    const next = await apiRequest<AIInsight[]>(
+      `/workspaces/${activeWorkspaceId}/ai/insights?conversationId=${conversationId}`,
+    );
+    setInsights(next);
   }
 
   function setRequestError(requestError: unknown) {
@@ -322,6 +384,52 @@ export default function InboxPage() {
                 </div>
               </div>
               <div className="flex-1 space-y-4 overflow-auto px-5 py-4">
+                <section className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-slate-950">AI</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => void runAI('summarize')}
+                      >
+                        Summarize
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => void runAI('extract')}
+                      >
+                        Extract
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => void runAI('suggest-next-action')}
+                      >
+                        Next action
+                      </Button>
+                    </div>
+                  </div>
+                  {aiMessage ? <p className="mt-2 text-xs text-slate-500">{aiMessage}</p> : null}
+                  <div className="mt-3 space-y-2">
+                    {insights.map((insight) => (
+                      <article
+                        key={insight.id}
+                        className="rounded border border-slate-200 bg-white p-3"
+                      >
+                        <p className="text-xs font-medium text-slate-500">{insight.type}</p>
+                        <h4 className="text-sm font-semibold text-slate-950">{insight.title}</h4>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                          {insight.content}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
                 {thread.messages.map((message) => (
                   <article
                     key={message.id}
