@@ -71,6 +71,9 @@ export function AppShell({ children }: { children?: React.ReactNode }) {
           <Link className="text-sm font-medium text-slate-700" href="/app/outreach">
             Outreach
           </Link>
+          <Link className="text-sm font-medium text-slate-700" href="/app/inbox">
+            Inbox
+          </Link>
           <Button type="button" variant="outline" onClick={() => void logout()}>
             Logout
           </Button>

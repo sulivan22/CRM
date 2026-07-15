@@ -120,6 +120,23 @@ enum DeliveryStatus {
   FAILED
 }
 
+enum ConversationChannel {
+  EMAIL
+}
+
+enum ConversationStatus {
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum InboundWebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
 model User {
   id                String                @id @default(uuid()) @db.Uuid
   email             String                @unique
@@ -164,6 +181,9 @@ model Workspace {
   outreachGenerationJobs OutreachGenerationJob[]
   emailSettings          WorkspaceEmailSettings?
   deliveries             Delivery[]
+  conversations          Conversation[]
+  inboundMessages        InboundMessage[]
+  inboundWebhookEvents   InboundWebhookEvent[]
 
   @@index([createdByUserId])
   @@map("workspaces")
@@ -270,6 +290,7 @@ model Person {
   channels           CommunicationChannel[]
   tags               PersonTag[]
   outreachRecipients OutreachRecipient[]
+  conversations      Conversation[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, organizationId])
@@ -390,6 +411,7 @@ model Outreach {
   instruction         OutreachInstruction?
   generatedMessages   GeneratedMessage[]
   generationJobs      OutreachGenerationJob[]
+  conversations       Conversation[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
@@ -460,6 +482,7 @@ model GeneratedMessage {
   recipient         OutreachRecipient      @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   delivery          Delivery?
+  conversations     Conversation[]
 
   @@unique([recipientId, generationVersion])
   @@index([workspaceId, status])
@@ -519,8 +542,86 @@ model Delivery {
   updatedAt          DateTime         @updatedAt
   workspace          Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   generatedMessage   GeneratedMessage @relation(fields: [generatedMessageId], references: [id], onDelete: Cascade)
+  conversations      Conversation[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
   @@map("deliveries")
+}
+
+model Conversation {
+  id                 String              @id @default(uuid()) @db.Uuid
+  workspaceId        String              @db.Uuid
+  personId           String              @db.Uuid
+  outreachId         String?             @db.Uuid
+  generatedMessageId String?             @db.Uuid
+  deliveryId         String?             @db.Uuid
+  channel            ConversationChannel @default(EMAIL)
+  subject            String?
+  status             ConversationStatus  @default(OPEN)
+  lastMessageAt      DateTime
+  unreadCount        Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  workspace          Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  person             Person              @relation(fields: [personId], references: [id], onDelete: Cascade)
+  outreach           Outreach?           @relation(fields: [outreachId], references: [id], onDelete: SetNull)
+  generatedMessage   GeneratedMessage?   @relation(fields: [generatedMessageId], references: [id], onDelete: SetNull)
+  delivery           Delivery?           @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
+  messages           InboundMessage[]
+
+  @@index([workspaceId, status, lastMessageAt])
+  @@index([workspaceId, personId])
+  @@index([workspaceId, outreachId])
+  @@index([workspaceId, deliveryId])
+  @@map("conversations")
+}
+
+model InboundMessage {
+  id                  String       @id @default(uuid()) @db.Uuid
+  workspaceId         String       @db.Uuid
+  conversationId      String       @db.Uuid
+  provider            String
+  providerMessageId   String
+  providerThreadId    String?
+  fromAddress         String
+  toAddress           String
+  replyToAddress      String?
+  subject             String?
+  textBody            String?
+  htmlBody            String?
+  headers             Json?
+  receivedAt          DateTime
+  readAt              DateTime?
+  rawMetadata         Json?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  workspace           Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation        Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerMessageId])
+  @@index([workspaceId, receivedAt])
+  @@index([workspaceId, conversationId, receivedAt])
+  @@index([provider, providerThreadId])
+  @@map("inbound_messages")
+}
+
+model InboundWebhookEvent {
+  id              String                    @id @default(uuid()) @db.Uuid
+  workspaceId     String?                   @db.Uuid
+  provider        String
+  providerEventId String
+  eventType       String
+  status          InboundWebhookEventStatus @default(RECEIVED)
+  payloadHash     String
+  payload         Json
+  errorMessage    String?
+  processedAt     DateTime?
+  createdAt       DateTime                  @default(now())
+  workspace       Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerEventId])
+  @@index([status, createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("inbound_webhook_events")
 }

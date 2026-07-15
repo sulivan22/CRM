@@ -12,7 +12,8 @@ import type { ServerEnv } from '@crm/config';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
-    logger: new JsonLogger()
+    logger: new JsonLogger(),
+    rawBody: true,
   });
   const env = app.get<ServerEnv>(SERVER_ENV);
 
@@ -22,8 +23,8 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true
-    })
+      transform: true,
+    }),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
 
@@ -34,7 +35,7 @@ async function bootstrap() {
         .setTitle('CRM Bootstrap API')
         .setDescription('Sprint 0 operational API')
         .setVersion('0.1.0')
-        .build()
+        .build(),
     );
     SwaggerModule.setup('docs', app, document);
   }

@@ -14,6 +14,7 @@ import { TagsModule } from './tags/tags.module.js';
 import { ImportsModule } from './imports/imports.module.js';
 import { OutreachModule } from './outreach/outreach.module.js';
 import { DeliveriesModule } from './deliveries/deliveries.module.js';
+import { InboxModule } from './inbox/inbox.module.js';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { DeliveriesModule } from './deliveries/deliveries.module.js';
     ImportsModule,
     OutreachModule,
     DeliveriesModule,
+    InboxModule,
   ],
   controllers: [HealthController],
   providers: [serverEnvProvider, PrismaService, HealthService, JsonLogger, AllExceptionsFilter],
