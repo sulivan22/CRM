@@ -32,7 +32,7 @@ export class JsonLogger implements LoggerService {
       context,
       message: typeof message === 'string' ? message : JSON.stringify(message),
       trace,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const writer = level === 'error' ? console.error : console.log;

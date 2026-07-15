@@ -11,7 +11,7 @@ describe('AppShell', () => {
     vi.stubGlobal('fetch', fetchMock);
     Object.defineProperty(window, 'location', {
       value: { href: '' },
-      writable: true
+      writable: true,
     });
   });
 
@@ -29,16 +29,16 @@ describe('AppShell', () => {
                 id: 'membership-1',
                 role: 'OWNER',
                 status: 'ACTIVE',
-                workspace: { id: 'workspace-1', name: 'One', slug: 'one', status: 'ACTIVE' }
+                workspace: { id: 'workspace-1', name: 'One', slug: 'one', status: 'ACTIVE' },
               },
               {
                 id: 'membership-2',
                 role: 'MEMBER',
                 status: 'ACTIVE',
-                workspace: { id: 'workspace-2', name: 'Two', slug: 'two', status: 'ACTIVE' }
-              }
-            ]
-          })
+                workspace: { id: 'workspace-2', name: 'Two', slug: 'two', status: 'ACTIVE' },
+              },
+            ],
+          }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -47,21 +47,21 @@ describe('AppShell', () => {
           Promise.resolve({
             user: { id: 'user-id', email: 'dev@example.com', displayName: 'Dev' },
             activeWorkspaceId: 'workspace-2',
-            memberships: []
-          })
+            memberships: [],
+          }),
       });
 
     render(<AppShell />);
 
     expect(await screen.findByText('Dev')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/active workspace/i), {
-      target: { value: 'workspace-2' }
+      target: { value: 'workspace-2' },
     });
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/auth/switch-workspace'),
-        expect.objectContaining({ credentials: 'include' })
+        expect.objectContaining({ credentials: 'include' }),
       );
     });
   });

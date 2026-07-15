@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, type MembershipStatus, type WorkspaceRole } from '@prisma/client';
 import { PrismaService } from '../prisma.service.js';
 import { AuditService } from '../auth/audit.service.js';
@@ -9,20 +15,20 @@ export class WorkspacesService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly slugService: SlugService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
   ) {}
 
   async listForUser(userId: string) {
     const memberships = await this.prismaService.client.workspaceMembership.findMany({
       where: { userId, status: 'ACTIVE', workspace: { status: 'ACTIVE' } },
       include: { workspace: true },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
 
     return memberships.map((membership) => ({
       membershipId: membership.id,
       role: membership.role,
-      workspace: membership.workspace
+      workspace: membership.workspace,
     }));
   }
 
@@ -35,7 +41,7 @@ export class WorkspacesService {
     try {
       const workspace = await this.prismaService.client.$transaction(async (tx) => {
         const created = await tx.workspace.create({
-          data: { name, slug, createdByUserId: input.userId }
+          data: { name, slug, createdByUserId: input.userId },
         });
         await tx.workspaceMembership.create({
           data: {
@@ -43,8 +49,8 @@ export class WorkspacesService {
             userId: input.userId,
             role: 'OWNER',
             status: 'ACTIVE',
-            joinedAt: new Date()
-          }
+            joinedAt: new Date(),
+          },
         });
         await tx.auditLog.create({
           data: {
@@ -53,8 +59,8 @@ export class WorkspacesService {
             action: 'workspace.created',
             entityType: 'Workspace',
             entityId: created.id,
-            metadata: {}
-          }
+            metadata: {},
+          },
         });
         return created;
       });
@@ -71,7 +77,7 @@ export class WorkspacesService {
   async getForMember(userId: string, workspaceId: string) {
     const membership = await this.prismaService.client.workspaceMembership.findFirst({
       where: { userId, workspaceId, status: 'ACTIVE', workspace: { status: 'ACTIVE' } },
-      include: { workspace: true }
+      include: { workspace: true },
     });
 
     if (!membership) {
@@ -81,7 +87,12 @@ export class WorkspacesService {
     return { workspace: membership.workspace, membership };
   }
 
-  async updateWorkspace(input: { actorUserId: string; workspaceId: string; name?: string; slug?: string }) {
+  async updateWorkspace(input: {
+    actorUserId: string;
+    workspaceId: string;
+    name?: string;
+    slug?: string;
+  }) {
     const data: Prisma.WorkspaceUpdateInput = {};
     if (input.name !== undefined) {
       data.name = input.name.trim();
@@ -92,7 +103,7 @@ export class WorkspacesService {
 
     const workspace = await this.prismaService.client.workspace.update({
       where: { id: input.workspaceId },
-      data
+      data,
     });
 
     await this.auditService.record({
@@ -101,7 +112,7 @@ export class WorkspacesService {
       action: 'workspace.updated',
       entityType: 'Workspace',
       entityId: input.workspaceId,
-      metadata: { fields: Object.keys(data) }
+      metadata: { fields: Object.keys(data) },
     });
 
     return workspace;
@@ -111,7 +122,7 @@ export class WorkspacesService {
     return this.prismaService.client.workspaceMembership.findMany({
       where: { workspaceId },
       include: { user: true },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
   }
 
@@ -125,7 +136,7 @@ export class WorkspacesService {
   }) {
     const membership = await this.prismaService.client.workspaceMembership.findUnique({
       where: { id: input.membershipId },
-      include: { user: true }
+      include: { user: true },
     });
 
     if (!membership || membership.workspaceId !== input.workspaceId) {
@@ -138,7 +149,8 @@ export class WorkspacesService {
       }
     }
 
-    const demotesOwner = membership.role === 'OWNER' && input.role !== undefined && input.role !== 'OWNER';
+    const demotesOwner =
+      membership.role === 'OWNER' && input.role !== undefined && input.role !== 'OWNER';
     const suspendsOwner =
       membership.role === 'OWNER' && input.status !== undefined && input.status !== 'ACTIVE';
 
@@ -154,9 +166,9 @@ export class WorkspacesService {
       where: { id: input.membershipId },
       data: {
         role: input.role,
-        status: input.status
+        status: input.status,
       },
-      include: { user: true }
+      include: { user: true },
     });
 
     await this.auditService.record({
@@ -165,7 +177,7 @@ export class WorkspacesService {
       action: input.status === 'SUSPENDED' ? 'membership.suspended' : 'membership.updated',
       entityType: 'WorkspaceMembership',
       entityId: input.membershipId,
-      metadata: { role: input.role, status: input.status }
+      metadata: { role: input.role, status: input.status },
     });
 
     return updated;
@@ -177,8 +189,8 @@ export class WorkspacesService {
         workspaceId,
         role: 'OWNER',
         status: 'ACTIVE',
-        id: { not: membershipId }
-      }
+        id: { not: membershipId },
+      },
     });
 
     if (activeOwners < 1) {

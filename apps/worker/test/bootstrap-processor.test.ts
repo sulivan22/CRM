@@ -5,7 +5,7 @@ describe('processBootstrapJob', () => {
   it('processes a bootstrap job', () => {
     expect(processBootstrapJob({ data: { requestedBy: 'test' } })).toMatchObject({
       processed: true,
-      requestedBy: 'test'
+      requestedBy: 'test',
     });
   });
 });

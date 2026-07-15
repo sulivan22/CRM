@@ -4,13 +4,12 @@ import type {
   User,
   Workspace,
   WorkspaceMembership,
-  WorkspaceRole
+  WorkspaceRole,
 } from '@prisma/client';
 
-export type AuthenticatedUser = Pick<
-  User,
-  'id' | 'email' | 'displayName' | 'status'
-> & { createdAt: string };
+export type AuthenticatedUser = Pick<User, 'id' | 'email' | 'displayName' | 'status'> & {
+  createdAt: string;
+};
 
 export interface RequestMembership extends WorkspaceMembership {
   workspace: Workspace;
@@ -28,7 +27,10 @@ export interface AuthenticatedRequest {
 
 export interface CookieResponse {
   cookie(name: string, value: string, options: CookieOptions): unknown;
-  clearCookie(name: string, options: Pick<CookieOptions, 'domain' | 'path' | 'sameSite' | 'secure'>): unknown;
+  clearCookie(
+    name: string,
+    options: Pick<CookieOptions, 'domain' | 'path' | 'sameSite' | 'secure'>,
+  ): unknown;
 }
 
 export interface CookieOptions {
@@ -45,7 +47,7 @@ export const workspaceRoleRank: Record<WorkspaceRole, number> = {
   VIEWER: 1,
   MEMBER: 2,
   ADMIN: 3,
-  OWNER: 4
+  OWNER: 4,
 };
 
 export const activeMembershipStatus: MembershipStatus = 'ACTIVE';

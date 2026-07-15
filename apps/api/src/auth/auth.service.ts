@@ -2,7 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  UnauthorizedException
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma, type User } from '@prisma/client';
 import argon2 from 'argon2';
@@ -22,7 +22,7 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private readonly sessionService: SessionService,
     private readonly slugService: SlugService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
   ) {}
 
   normalizeEmail(email: string) {
@@ -48,8 +48,8 @@ export class AuthService {
           data: {
             email,
             passwordHash,
-            displayName: input.displayName?.trim() || null
-          }
+            displayName: input.displayName?.trim() || null,
+          },
         });
 
         let activeWorkspaceId: string | null = null;
@@ -59,8 +59,8 @@ export class AuthService {
             data: {
               name: workspaceName,
               slug,
-              createdByUserId: user.id
-            }
+              createdByUserId: user.id,
+            },
           });
           activeWorkspaceId = workspace.id;
           await tx.workspaceMembership.create({
@@ -69,8 +69,8 @@ export class AuthService {
               userId: user.id,
               role: 'OWNER',
               status: 'ACTIVE',
-              joinedAt: new Date()
-            }
+              joinedAt: new Date(),
+            },
           });
           await tx.auditLog.create({
             data: {
@@ -79,8 +79,8 @@ export class AuthService {
               action: 'workspace.created',
               entityType: 'Workspace',
               entityId: workspace.id,
-              metadata: { source: 'registration' }
-            }
+              metadata: { source: 'registration' },
+            },
           });
         }
 
@@ -90,8 +90,8 @@ export class AuthService {
             action: 'auth.registered',
             entityType: 'User',
             entityId: user.id,
-            metadata: {}
-          }
+            metadata: {},
+          },
         });
 
         return { user, activeWorkspaceId };
@@ -101,12 +101,12 @@ export class AuthService {
         userId: result.user.id,
         activeWorkspaceId: result.activeWorkspaceId,
         userAgent: input.userAgent,
-        ipAddress: input.ipAddress
+        ipAddress: input.ipAddress,
       });
 
       return {
         rawToken: session.rawToken,
-        body: await this.authPayload(result.user, result.activeWorkspaceId)
+        body: await this.authPayload(result.user, result.activeWorkspaceId),
       };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -125,41 +125,45 @@ export class AuthService {
     const email = this.normalizeEmail(input.email);
     const user = await this.prismaService.client.user.findUnique({ where: { email } });
 
-    if (!user || user.status !== 'ACTIVE' || !(await argon2.verify(user.passwordHash, input.password))) {
+    if (
+      !user ||
+      user.status !== 'ACTIVE' ||
+      !(await argon2.verify(user.passwordHash, input.password))
+    ) {
       await this.auditService.record({
         action: 'auth.login_failed',
         entityType: 'User',
-        metadata: { email }
+        metadata: { email },
       });
       throw new UnauthorizedException('Invalid email or password');
     }
 
     const firstMembership = await this.prismaService.client.workspaceMembership.findFirst({
       where: { userId: user.id, status: 'ACTIVE', workspace: { status: 'ACTIVE' } },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
     const session = await this.sessionService.createSession({
       userId: user.id,
       activeWorkspaceId: firstMembership?.workspaceId,
       userAgent: input.userAgent,
-      ipAddress: input.ipAddress
+      ipAddress: input.ipAddress,
     });
 
     await this.prismaService.client.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() }
+      data: { lastLoginAt: new Date() },
     });
     await this.auditService.record({
       actorUserId: user.id,
       action: 'auth.login_succeeded',
       entityType: 'User',
       entityId: user.id,
-      metadata: {}
+      metadata: {},
     });
 
     return {
       rawToken: session.rawToken,
-      body: await this.authPayload(user, firstMembership?.workspaceId ?? null)
+      body: await this.authPayload(user, firstMembership?.workspaceId ?? null),
     };
   }
 
@@ -174,9 +178,9 @@ export class AuthService {
         userId: input.userId,
         workspaceId: input.workspaceId,
         status: 'ACTIVE',
-        workspace: { status: 'ACTIVE' }
+        workspace: { status: 'ACTIVE' },
       },
-      include: { workspace: true }
+      include: { workspace: true },
     });
 
     if (!membership) {
@@ -185,7 +189,7 @@ export class AuthService {
 
     await this.prismaService.client.session.update({
       where: { id: input.sessionId },
-      data: { activeWorkspaceId: input.workspaceId }
+      data: { activeWorkspaceId: input.workspaceId },
     });
     await this.auditService.record({
       workspaceId: input.workspaceId,
@@ -193,7 +197,7 @@ export class AuthService {
       action: 'workspace.switched',
       entityType: 'Workspace',
       entityId: input.workspaceId,
-      metadata: {}
+      metadata: {},
     });
 
     return this.me(input.userId, input.workspaceId);
@@ -203,19 +207,21 @@ export class AuthService {
     const memberships = await this.prismaService.client.workspaceMembership.findMany({
       where: { userId: user.id, status: 'ACTIVE', workspace: { status: 'ACTIVE' } },
       include: { workspace: true },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     });
 
     return {
       user: sanitizeUser(user),
       memberships: memberships.map(presentMembership),
-      activeWorkspaceId
+      activeWorkspaceId,
     };
   }
 
   private assertPasswordPolicy(password: string) {
     if (password.length < this.env.PASSWORD_MIN_LENGTH) {
-      throw new BadRequestException(`Password must be at least ${this.env.PASSWORD_MIN_LENGTH} characters`);
+      throw new BadRequestException(
+        `Password must be at least ${this.env.PASSWORD_MIN_LENGTH} characters`,
+      );
     }
   }
 

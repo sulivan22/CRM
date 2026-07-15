@@ -8,7 +8,7 @@ export function GET() {
   const body: HealthCheckResponse = {
     service: 'web',
     status: 'ok',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   return NextResponse.json(body);

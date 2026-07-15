@@ -6,13 +6,11 @@ export function sanitizeUser(user: User) {
     email: user.email,
     displayName: user.displayName,
     status: user.status,
-    createdAt: user.createdAt.toISOString()
+    createdAt: user.createdAt.toISOString(),
   };
 }
 
-export function presentMembership(
-  membership: WorkspaceMembership & { workspace: Workspace }
-) {
+export function presentMembership(membership: WorkspaceMembership & { workspace: Workspace }) {
   return {
     id: membership.id,
     role: membership.role,
@@ -21,7 +19,7 @@ export function presentMembership(
       id: membership.workspace.id,
       name: membership.workspace.name,
       slug: membership.workspace.slug,
-      status: membership.workspace.status
-    }
+      status: membership.workspace.status,
+    },
   };
 }

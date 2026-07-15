@@ -4,7 +4,7 @@ import { WorkerModule } from './worker.module.js';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(WorkerModule, {
-    logger: ['log', 'warn', 'error']
+    logger: ['log', 'warn', 'error'],
   });
 
   const shutdown = async () => {

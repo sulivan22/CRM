@@ -23,7 +23,7 @@ export class WorkspacesController {
     return this.workspacesService.create({
       userId: this.requireUserId(request),
       name: dto.name,
-      slug: dto.slug
+      slug: dto.slug,
     });
   }
 
@@ -32,7 +32,7 @@ export class WorkspacesController {
   get(@Req() request: AuthenticatedRequest) {
     return {
       workspace: request.currentWorkspace,
-      membership: request.currentMembership
+      membership: request.currentMembership,
     };
   }
 
@@ -42,13 +42,13 @@ export class WorkspacesController {
   update(
     @Param('workspaceId') workspaceId: string,
     @Body() dto: UpdateWorkspaceDto,
-    @Req() request: AuthenticatedRequest
+    @Req() request: AuthenticatedRequest,
   ) {
     return this.workspacesService.updateWorkspace({
       actorUserId: this.requireUserId(request),
       workspaceId,
       name: dto.name,
-      slug: dto.slug
+      slug: dto.slug,
     });
   }
 
@@ -61,7 +61,7 @@ export class WorkspacesController {
       role: membership.role,
       status: membership.status,
       joinedAt: membership.joinedAt?.toISOString() ?? null,
-      user: sanitizeUser(membership.user)
+      user: sanitizeUser(membership.user),
     }));
   }
 
@@ -72,7 +72,7 @@ export class WorkspacesController {
     @Param('workspaceId') workspaceId: string,
     @Param('membershipId') membershipId: string,
     @Body() dto: UpdateMembershipDto,
-    @Req() request: AuthenticatedRequest
+    @Req() request: AuthenticatedRequest,
   ) {
     if (!request.currentMembership) {
       throw new Error('Workspace guard did not attach membership');
@@ -83,7 +83,7 @@ export class WorkspacesController {
       workspaceId,
       membershipId,
       role: dto.role,
-      status: dto.status
+      status: dto.status,
     });
   }
 

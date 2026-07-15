@@ -12,7 +12,7 @@ export class WorkspaceRolesGuard implements CanActivate {
   canActivate(context: ExecutionContext) {
     const roles = this.reflector.getAllAndOverride<WorkspaceRole[]>(WORKSPACE_ROLES_KEY, [
       context.getHandler(),
-      context.getClass()
+      context.getClass(),
     ]);
 
     if (!roles?.length) {

@@ -11,7 +11,7 @@ const LAST_USED_WRITE_INTERVAL_MS = 5 * 60 * 1000;
 export class SessionService {
   constructor(
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
-    private readonly prismaService: PrismaService
+    private readonly prismaService: PrismaService,
   ) {}
 
   createRawToken() {
@@ -39,8 +39,8 @@ export class SessionService {
         tokenHash,
         expiresAt,
         userAgent: input.userAgent,
-        ipAddress: input.ipAddress
-      }
+        ipAddress: input.ipAddress,
+      },
     });
 
     return { rawToken, session };
@@ -55,7 +55,7 @@ export class SessionService {
     const tokenHash = this.hashToken(rawToken);
     const session = await this.prismaService.client.session.findUnique({
       where: { tokenHash },
-      include: { user: true, activeWorkspace: true }
+      include: { user: true, activeWorkspace: true },
     });
 
     if (!session || session.revokedAt || session.expiresAt <= new Date()) {
@@ -75,29 +75,29 @@ export class SessionService {
     if (Date.now() - session.lastUsedAt.getTime() > LAST_USED_WRITE_INTERVAL_MS) {
       await this.prismaService.client.session.update({
         where: { id: session.id },
-        data: { lastUsedAt: new Date() }
+        data: { lastUsedAt: new Date() },
       });
     }
 
     return {
       session,
       user: session.user,
-      activeWorkspace: session.activeWorkspace
+      activeWorkspace: session.activeWorkspace,
     };
   }
 
   async revokeSession(sessionId: string) {
     await this.prismaService.client.session.update({
       where: { id: sessionId },
-      data: { revokedAt: new Date() }
+      data: { revokedAt: new Date() },
     });
   }
 
   async cleanupExpiredSessions() {
     return this.prismaService.client.session.deleteMany({
       where: {
-        OR: [{ expiresAt: { lt: new Date() } }, { revokedAt: { not: null } }]
-      }
+        OR: [{ expiresAt: { lt: new Date() } }, { revokedAt: { not: null } }],
+      },
     });
   }
 
@@ -110,7 +110,7 @@ export class SessionService {
       domain: this.env.AUTH_COOKIE_DOMAIN,
       path: '/',
       sameSite: 'lax',
-      secure: this.useSecureCookie()
+      secure: this.useSecureCookie(),
     });
   }
 
@@ -134,7 +134,7 @@ export class SessionService {
       secure: this.useSecureCookie(),
       maxAge: this.env.AUTH_SESSION_TTL_SECONDS * 1000,
       domain: this.env.AUTH_COOKIE_DOMAIN,
-      path: '/'
+      path: '/',
     };
   }
 

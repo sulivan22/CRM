@@ -10,7 +10,7 @@ export class HealthService {
     return {
       service: 'api',
       status: 'ok',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
@@ -23,8 +23,8 @@ export class HealthService {
       status,
       timestamp: new Date().toISOString(),
       checks: {
-        database: databaseStatus
-      }
+        database: databaseStatus,
+      },
     } satisfies ReadyCheckResponse;
 
     if (status !== 'ok') {

@@ -19,9 +19,9 @@ export class WorkspaceMembershipGuard implements CanActivate {
         workspaceId,
         userId: request.user.id,
         status: 'ACTIVE',
-        workspace: { status: 'ACTIVE' }
+        workspace: { status: 'ACTIVE' },
       },
-      include: { workspace: true }
+      include: { workspace: true },
     });
 
     if (!membership) {

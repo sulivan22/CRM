@@ -9,18 +9,17 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-slate-950 text-white hover:bg-slate-800',
-        outline: 'border border-slate-300 bg-white text-slate-950 hover:bg-slate-100'
-      }
+        outline: 'border border-slate-300 bg-white text-slate-950 hover:bg-slate-100',
+      },
     },
     defaultVariants: {
-      variant: 'default'
-    }
-  }
+      variant: 'default',
+    },
+  },
 );
 
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 

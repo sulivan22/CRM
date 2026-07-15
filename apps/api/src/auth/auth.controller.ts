@@ -10,19 +10,19 @@ import { SessionService } from './session.service.js';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly sessionService: SessionService
+    private readonly sessionService: SessionService,
   ) {}
 
   @Post('register')
   async register(
     @Body() dto: RegisterDto,
     @Req() request: AuthenticatedRequest,
-    @Res({ passthrough: true }) response: CookieResponse
+    @Res({ passthrough: true }) response: CookieResponse,
   ) {
     const result = await this.authService.register({
       ...dto,
       userAgent: this.userAgent(request),
-      ipAddress: request.ip
+      ipAddress: request.ip,
     });
     this.sessionService.setSessionCookie(response, result.rawToken);
     return result.body;
@@ -33,12 +33,12 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Req() request: AuthenticatedRequest,
-    @Res({ passthrough: true }) response: CookieResponse
+    @Res({ passthrough: true }) response: CookieResponse,
   ) {
     const result = await this.authService.login({
       ...dto,
       userAgent: this.userAgent(request),
-      ipAddress: request.ip
+      ipAddress: request.ip,
     });
     this.sessionService.setSessionCookie(response, result.rawToken);
     return result.body;
@@ -49,7 +49,7 @@ export class AuthController {
   @HttpCode(204)
   async logout(
     @Req() request: AuthenticatedRequest,
-    @Res({ passthrough: true }) response: CookieResponse
+    @Res({ passthrough: true }) response: CookieResponse,
   ) {
     if (request.session) {
       await this.sessionService.revokeSession(request.session.id);
@@ -59,7 +59,10 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AuthGuard)
-  me(@Req() request: AuthenticatedRequest, @CurrentUser() user: NonNullable<AuthenticatedRequest['user']>) {
+  me(
+    @Req() request: AuthenticatedRequest,
+    @CurrentUser() user: NonNullable<AuthenticatedRequest['user']>,
+  ) {
     return this.authService.me(user.id, request.session?.activeWorkspaceId);
   }
 
@@ -72,7 +75,7 @@ export class AuthController {
     return this.authService.switchWorkspace({
       userId: request.user.id,
       sessionId: request.session.id,
-      workspaceId: dto.workspaceId
+      workspaceId: dto.workspaceId,
     });
   }
 

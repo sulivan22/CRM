@@ -4,7 +4,7 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
-  Injectable
+  Injectable,
 } from '@nestjs/common';
 
 interface JsonResponse {
@@ -26,7 +26,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       message:
         exception instanceof HttpException ? exception.message : 'An unexpected error occurred',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 }
