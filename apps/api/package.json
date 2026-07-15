@@ -16,6 +16,7 @@
     "@crm/config": "workspace:*",
     "@crm/database": "workspace:*",
     "@crm/delivery": "workspace:*",
+    "@crm/inbox": "workspace:*",
     "@crm/types": "workspace:*",
     "@prisma/client": "^6.1.0",
     "@nestjs/common": "^10.4.15",

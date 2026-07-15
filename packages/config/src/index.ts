@@ -33,6 +33,11 @@ export const serverEnvSchema = z.object({
   OUTREACH_GENERATION_BATCH_SIZE: z.coerce.number().int().positive().default(25),
   DELIVERY_ATTEMPTS: z.coerce.number().int().positive().default(5),
   DELIVERY_BACKOFF_MS: z.coerce.number().int().positive().default(2000),
+  INBOUND_PROVIDER: z.enum(['fake', 'resend']).default('fake'),
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
+  INBOUND_MAX_BODY_BYTES: z.coerce.number().int().positive().default(262_144),
+  INBOUND_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  INBOUND_BACKOFF_MS: z.coerce.number().int().positive().default(2000),
 });
 
 export const clientEnvSchema = z.object({

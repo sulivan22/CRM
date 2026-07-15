@@ -4,6 +4,7 @@ import { BootstrapQueueService } from './bootstrap-queue.service.js';
 import { PeopleImportWorkerService } from './people-import-worker.service.js';
 import { OutreachGenerationWorkerService } from './outreach-generation-worker.service.js';
 import { DeliverySendWorkerService } from './delivery-send-worker.service.js';
+import { InboundEmailWorkerService } from './inbound-email-worker.service.js';
 
 @Module({
   providers: [
@@ -12,6 +13,7 @@ import { DeliverySendWorkerService } from './delivery-send-worker.service.js';
     PeopleImportWorkerService,
     OutreachGenerationWorkerService,
     DeliverySendWorkerService,
+    InboundEmailWorkerService,
   ],
 })
 export class WorkerModule {}
