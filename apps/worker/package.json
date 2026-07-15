@@ -17,6 +17,7 @@
     "@crm/ai": "workspace:*",
     "@crm/config": "workspace:*",
     "@crm/database": "workspace:*",
+    "@crm/delivery": "workspace:*",
     "bullmq": "^5.34.2",
     "reflect-metadata": "^0.2.2",
     "@nestjs/common": "^10.4.15",

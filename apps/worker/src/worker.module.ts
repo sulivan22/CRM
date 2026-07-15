@@ -3,6 +3,7 @@ import { serverEnvProvider } from './worker-env.js';
 import { BootstrapQueueService } from './bootstrap-queue.service.js';
 import { PeopleImportWorkerService } from './people-import-worker.service.js';
 import { OutreachGenerationWorkerService } from './outreach-generation-worker.service.js';
+import { DeliverySendWorkerService } from './delivery-send-worker.service.js';
 
 @Module({
   providers: [
@@ -10,6 +11,7 @@ import { OutreachGenerationWorkerService } from './outreach-generation-worker.se
     BootstrapQueueService,
     PeopleImportWorkerService,
     OutreachGenerationWorkerService,
+    DeliverySendWorkerService,
   ],
 })
 export class WorkerModule {}

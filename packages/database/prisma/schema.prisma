@@ -113,6 +113,13 @@ enum OutreachGenerationJobStatus {
   FAILED
 }
 
+enum DeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
 model User {
   id                String                @id @default(uuid()) @db.Uuid
   email             String                @unique
@@ -155,6 +162,8 @@ model Workspace {
   outreachInstructions   OutreachInstruction[]
   generatedMessages      GeneratedMessage[]
   outreachGenerationJobs OutreachGenerationJob[]
+  emailSettings          WorkspaceEmailSettings?
+  deliveries             Delivery[]
 
   @@index([createdByUserId])
   @@map("workspaces")
@@ -450,6 +459,7 @@ model GeneratedMessage {
   outreach          Outreach               @relation(fields: [outreachId], references: [id], onDelete: Cascade)
   recipient         OutreachRecipient      @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  delivery          Delivery?
 
   @@unique([recipientId, generationVersion])
   @@index([workspaceId, status])
@@ -478,4 +488,39 @@ model OutreachGenerationJob {
   @@index([workspaceId, status])
   @@index([outreachId, createdAt])
   @@map("outreach_generation_jobs")
+}
+
+model WorkspaceEmailSettings {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @unique @db.Uuid
+  provider    String    @default("FAKE")
+  fromName    String
+  fromEmail   String
+  replyTo     String?
+  apiKey      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("workspace_email_settings")
+}
+
+model Delivery {
+  id                 String           @id @default(uuid()) @db.Uuid
+  workspaceId        String           @db.Uuid
+  generatedMessageId String           @unique @db.Uuid
+  provider           String
+  providerMessageId  String?
+  status             DeliveryStatus   @default(PENDING)
+  error              String?
+  sentAt             DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  workspace          Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  generatedMessage   GeneratedMessage @relation(fields: [generatedMessageId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@map("deliveries")
 }

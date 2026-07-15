@@ -44,6 +44,24 @@ await prisma.workspaceMembership.upsert({
   },
 });
 
+await prisma.workspaceEmailSettings.upsert({
+  where: { workspaceId: workspace.id },
+  update: {
+    provider: 'FAKE',
+    fromName: 'Development CRM',
+    fromEmail: 'hello@example.com',
+    replyTo: 'reply@example.com',
+    apiKey: null,
+  },
+  create: {
+    workspaceId: workspace.id,
+    provider: 'FAKE',
+    fromName: 'Development CRM',
+    fromEmail: 'hello@example.com',
+    replyTo: 'reply@example.com',
+  },
+});
+
 const organization = await prisma.organization.upsert({
   where: {
     workspaceId_normalizedName: {
