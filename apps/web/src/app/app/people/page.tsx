@@ -31,6 +31,18 @@ type ImportJob = {
   succeededRows: number;
   failedRows: number;
 };
+type AIExecution = {
+  id: string;
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  errorMessage: string | null;
+};
+type AIInsight = {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  createdAt: string;
+};
 
 const channelTypes = [
   'EMAIL',
@@ -59,6 +71,8 @@ export default function PeoplePage() {
   const [tagFilter, setTagFilter] = useState('');
   const [orgFilter, setOrgFilter] = useState('');
   const [message, setMessage] = useState('');
+  const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
+  const [aiBusy, setAiBusy] = useState(false);
   const [importJob, setImportJob] = useState<ImportJob | null>(null);
 
   const workspaceId = auth?.activeWorkspaceId;
@@ -109,6 +123,14 @@ export default function PeoplePage() {
     const timeout = window.setTimeout(() => void loadPeople(workspaceId), 250);
     return () => window.clearTimeout(timeout);
   }, [loadPeople, workspaceId]);
+
+  useEffect(() => {
+    if (!workspaceId || !selected) {
+      setAiInsights([]);
+      return;
+    }
+    void loadAIInsights(workspaceId, selected.id);
+  }, [selected, workspaceId]);
 
   async function createPerson(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -193,6 +215,43 @@ export default function PeoplePage() {
     );
     setImportJob(response);
     await loadPeople(workspaceId);
+  }
+
+  async function runAI(path: 'extract' | 'suggest-next-action' | 'generate') {
+    if (!workspaceId || !selected) return;
+    setAiBusy(true);
+    setMessage('AI processing queued.');
+    try {
+      const execution = await apiRequest<AIExecution>(`/workspaces/${workspaceId}/ai/${path}`, {
+        method: 'POST',
+        body: JSON.stringify({ personId: selected.id }),
+      });
+      await waitForExecution(workspaceId, execution.id);
+      await loadAIInsights(workspaceId, selected.id);
+      setMessage('AI insight ready.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'AI request failed.');
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  async function waitForExecution(activeWorkspaceId: string, executionId: string) {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const execution = await apiRequest<AIExecution>(
+        `/workspaces/${activeWorkspaceId}/ai/executions/${executionId}`,
+      );
+      if (execution.status === 'COMPLETED') return;
+      if (execution.status === 'FAILED') throw new Error(execution.errorMessage ?? 'AI failed.');
+      await new Promise((resolve) => window.setTimeout(resolve, 500));
+    }
+  }
+
+  async function loadAIInsights(activeWorkspaceId: string, personId: string) {
+    const next = await apiRequest<AIInsight[]>(
+      `/workspaces/${activeWorkspaceId}/ai/insights?personId=${personId}`,
+    );
+    setAiInsights(next);
   }
 
   return (
@@ -362,6 +421,49 @@ export default function PeoplePage() {
 
             {selected ? (
               <div className="space-y-4 rounded-md border border-slate-200 bg-white p-4">
+                <section className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-slate-950">AI</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={aiBusy}
+                        onClick={() => void runAI('extract')}
+                      >
+                        Extract
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={aiBusy}
+                        onClick={() => void runAI('suggest-next-action')}
+                      >
+                        Next
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={aiBusy}
+                        onClick={() => void runAI('generate')}
+                      >
+                        Draft
+                      </Button>
+                    </div>
+                  </div>
+                  {aiInsights.map((insight) => (
+                    <article
+                      key={insight.id}
+                      className="rounded border border-slate-200 bg-white p-3"
+                    >
+                      <p className="text-xs font-medium text-slate-500">{insight.type}</p>
+                      <h4 className="text-sm font-semibold text-slate-950">{insight.title}</h4>
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+                        {insight.content}
+                      </p>
+                    </article>
+                  ))}
+                </section>
                 <form onSubmit={(event) => void updateSelected(event)} className="space-y-3">
                   <h3 className="text-sm font-semibold text-slate-950">Details</h3>
                   <input

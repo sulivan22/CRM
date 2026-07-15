@@ -137,6 +137,21 @@ enum InboundWebhookEventStatus {
   FAILED
 }
 
+enum AIExecutionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AIInsightType {
+  REPLY_SUMMARY
+  FACT_EXTRACTION
+  INTENT_CLASSIFICATION
+  NEXT_ACTION
+  GENERATED_TEXT
+}
+
 model User {
   id                String                @id @default(uuid()) @db.Uuid
   email             String                @unique
@@ -153,6 +168,7 @@ model User {
   auditLogs         AuditLog[]
   peopleImportJobs  ImportJob[]           @relation("ImportJobCreator")
   outreach          Outreach[]            @relation("OutreachCreator")
+  aiExecutions      AIExecution[]
 
   @@map("users")
 }
@@ -179,11 +195,15 @@ model Workspace {
   outreachInstructions   OutreachInstruction[]
   generatedMessages      GeneratedMessage[]
   outreachGenerationJobs OutreachGenerationJob[]
+  settings               WorkspaceSettings?
+  aiSettings             WorkspaceAISettings?
   emailSettings          WorkspaceEmailSettings?
   deliveries             Delivery[]
   conversations          Conversation[]
   inboundMessages        InboundMessage[]
   inboundWebhookEvents   InboundWebhookEvent[]
+  aiExecutions           AIExecution[]
+  aiInsights             AIInsight[]
 
   @@index([createdByUserId])
   @@map("workspaces")
@@ -291,6 +311,7 @@ model Person {
   tags               PersonTag[]
   outreachRecipients OutreachRecipient[]
   conversations      Conversation[]
+  aiInsights         AIInsight[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, organizationId])
@@ -516,17 +537,51 @@ model OutreachGenerationJob {
 model WorkspaceEmailSettings {
   id          String    @id @default(uuid()) @db.Uuid
   workspaceId String    @unique @db.Uuid
-  provider    String    @default("FAKE")
-  fromName    String
-  fromEmail   String
-  replyTo     String?
+  provider    String    @default("fake")
   apiKey      String?
+  domain      String?
+  fromName    String    @default("AI Outreach OS")
+  fromEmail   String    @default("no-reply@example.test")
+  replyTo     String?
+  enabled     Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@map("workspace_email_settings")
+}
+
+model WorkspaceSettings {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @unique @db.Uuid
+  companyName String
+  logoUrl     String?
+  timezone    String    @default("UTC")
+  locale      String    @default("en-US")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("workspace_settings")
+}
+
+model WorkspaceAISettings {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @unique @db.Uuid
+  provider    String    @default("fake")
+  apiKey      String?
+  model       String    @default("fake-v1")
+  temperature Float     @default(0.2)
+  maxTokens   Int       @default(800)
+  enabled     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("workspace_ai_settings")
 }
 
 model Delivery {
@@ -569,6 +624,7 @@ model Conversation {
   generatedMessage   GeneratedMessage?   @relation(fields: [generatedMessageId], references: [id], onDelete: SetNull)
   delivery           Delivery?           @relation(fields: [deliveryId], references: [id], onDelete: SetNull)
   messages           InboundMessage[]
+  aiInsights         AIInsight[]
 
   @@index([workspaceId, status, lastMessageAt])
   @@index([workspaceId, personId])
@@ -624,4 +680,52 @@ model InboundWebhookEvent {
   @@index([status, createdAt])
   @@index([workspaceId, createdAt])
   @@map("inbound_webhook_events")
+}
+
+model AIExecution {
+  id            String            @id @default(uuid()) @db.Uuid
+  workspaceId   String            @db.Uuid
+  actorUserId   String?           @db.Uuid
+  operation     String
+  provider      String
+  model         String
+  status        AIExecutionStatus @default(PENDING)
+  input         Json
+  output        Json?
+  errorMessage  String?
+  promptVersion String
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor         User?             @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  insights      AIInsight[]
+
+  @@index([workspaceId, operation, createdAt])
+  @@index([workspaceId, status, createdAt])
+  @@map("ai_executions")
+}
+
+model AIInsight {
+  id             String        @id @default(uuid()) @db.Uuid
+  workspaceId    String        @db.Uuid
+  executionId    String        @db.Uuid
+  personId       String?       @db.Uuid
+  conversationId String?       @db.Uuid
+  type           AIInsightType
+  title          String
+  content        String
+  confidence     Float?
+  data           Json?
+  createdAt      DateTime      @default(now())
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  execution      AIExecution   @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  person         Person?       @relation(fields: [personId], references: [id], onDelete: Cascade)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, type, createdAt])
+  @@index([workspaceId, personId, createdAt])
+  @@index([workspaceId, conversationId, createdAt])
+  @@map("ai_insights")
 }

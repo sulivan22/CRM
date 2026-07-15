@@ -18,6 +18,6 @@ describe('delivery providers', () => {
   });
 
   it('requires a resend api key for resend provider', () => {
-    expect(() => createDeliveryProvider({ provider: 'RESEND' })).toThrow(/api key/i);
+    expect(() => createDeliveryProvider({ provider: 'resend' })).toThrow(/api key/i);
   });
 });
