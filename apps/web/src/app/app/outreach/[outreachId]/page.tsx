@@ -47,6 +47,13 @@ type Message = {
   };
 };
 type MessageList = { items: Message[]; total: number };
+type DeliveryCounters = {
+  pending: number;
+  sending: number;
+  sent: number;
+  failed: number;
+};
+type DeliveryList = { counters: DeliveryCounters };
 
 function formString(form: FormData, name: string) {
   const value = form.get(name);
@@ -60,6 +67,12 @@ export default function OutreachDetailPage() {
   const [outreach, setOutreach] = useState<Outreach | null>(null);
   const [generation, setGeneration] = useState<GenerationJob | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [deliveryCounters, setDeliveryCounters] = useState<DeliveryCounters>({
+    pending: 0,
+    sending: 0,
+    sent: 0,
+    failed: 0,
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
   const workspaceId = auth?.activeWorkspaceId;
@@ -79,7 +92,7 @@ export default function OutreachDetailPage() {
   }, [workspaceId, outreachId]);
 
   async function load(activeWorkspaceId: string, activeOutreachId: string) {
-    const [nextOutreach, nextGeneration, nextMessages] = await Promise.all([
+    const [nextOutreach, nextGeneration, nextMessages, nextDeliveries] = await Promise.all([
       apiRequest<Outreach>(`/workspaces/${activeWorkspaceId}/outreach/${activeOutreachId}`),
       apiRequest<GenerationJob | null>(
         `/workspaces/${activeWorkspaceId}/outreach/${activeOutreachId}/generation`,
@@ -87,10 +100,14 @@ export default function OutreachDetailPage() {
       apiRequest<MessageList>(
         `/workspaces/${activeWorkspaceId}/outreach/${activeOutreachId}/messages`,
       ),
+      apiRequest<DeliveryList>(
+        `/workspaces/${activeWorkspaceId}/deliveries?outreachId=${activeOutreachId}`,
+      ),
     ]);
     setOutreach(nextOutreach);
     setGeneration(nextGeneration);
     setMessages(nextMessages.items);
+    setDeliveryCounters(nextDeliveries.counters);
     setSelectedId((current) => current ?? nextMessages.items[0]?.id ?? null);
   }
 
@@ -165,6 +182,16 @@ export default function OutreachDetailPage() {
     await refresh();
   }
 
+  async function sendOutreach(retryFailed = false) {
+    if (!workspaceId || !outreachId) return;
+    await apiRequest(`/workspaces/${workspaceId}/outreach/${outreachId}/send`, {
+      method: 'POST',
+      body: JSON.stringify({ retryFailed }),
+    });
+    setNotice(retryFailed ? 'Failed deliveries queued.' : 'Approved messages queued for delivery.');
+    await refresh();
+  }
+
   return (
     <AppShell>
       <div className="space-y-5">
@@ -191,6 +218,17 @@ export default function OutreachDetailPage() {
             <Button type="button" variant="outline" onClick={() => void approveAll()}>
               Approve all
             </Button>
+            <Button type="button" onClick={() => void sendOutreach(false)}>
+              Send Outreach
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deliveryCounters.failed === 0}
+              onClick={() => void sendOutreach(true)}
+            >
+              Retry Failed
+            </Button>
           </div>
         </div>
 
@@ -200,6 +238,20 @@ export default function OutreachDetailPage() {
             {generation?.total ?? outreach?.totalRecipients ?? 0} processed ·{' '}
             {generation?.failed ?? 0} failed
           </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-4">
+          {[
+            ['Pending', deliveryCounters.pending],
+            ['Sending', deliveryCounters.sending],
+            ['Sent', deliveryCounters.sent],
+            ['Failed', deliveryCounters.failed],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-md border border-slate-200 bg-white p-4">
+              <p className="text-xs uppercase text-slate-500">{label}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-950">{value}</p>
+            </div>
+          ))}
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_420px]">

@@ -17,3 +17,5 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export type { PrismaClient };
+export { DeliveryStatus, GeneratedMessageStatus, Prisma } from '@prisma/client';
+export type { Delivery } from '@prisma/client';

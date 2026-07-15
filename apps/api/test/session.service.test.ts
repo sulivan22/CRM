@@ -22,6 +22,8 @@ function env(): ServerEnv {
     AI_PROVIDER: 'fake',
     AI_DEFAULT_MODEL: 'fake-v1',
     OUTREACH_GENERATION_BATCH_SIZE: 25,
+    DELIVERY_ATTEMPTS: 5,
+    DELIVERY_BACKOFF_MS: 2000,
   };
 }
 

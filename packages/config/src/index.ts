@@ -31,6 +31,8 @@ export const serverEnvSchema = z.object({
   AI_PROVIDER: z.enum(['fake']).default('fake'),
   AI_DEFAULT_MODEL: z.string().min(1).default('fake-v1'),
   OUTREACH_GENERATION_BATCH_SIZE: z.coerce.number().int().positive().default(25),
+  DELIVERY_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  DELIVERY_BACKOFF_MS: z.coerce.number().int().positive().default(2000),
 });
 
 export const clientEnvSchema = z.object({
