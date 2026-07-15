@@ -195,6 +195,8 @@ model Workspace {
   outreachInstructions   OutreachInstruction[]
   generatedMessages      GeneratedMessage[]
   outreachGenerationJobs OutreachGenerationJob[]
+  settings               WorkspaceSettings?
+  aiSettings             WorkspaceAISettings?
   emailSettings          WorkspaceEmailSettings?
   deliveries             Delivery[]
   conversations          Conversation[]
@@ -535,17 +537,51 @@ model OutreachGenerationJob {
 model WorkspaceEmailSettings {
   id          String    @id @default(uuid()) @db.Uuid
   workspaceId String    @unique @db.Uuid
-  provider    String    @default("FAKE")
-  fromName    String
-  fromEmail   String
-  replyTo     String?
+  provider    String    @default("fake")
   apiKey      String?
+  domain      String?
+  fromName    String    @default("AI Outreach OS")
+  fromEmail   String    @default("no-reply@example.test")
+  replyTo     String?
+  enabled     Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@map("workspace_email_settings")
+}
+
+model WorkspaceSettings {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @unique @db.Uuid
+  companyName String
+  logoUrl     String?
+  timezone    String    @default("UTC")
+  locale      String    @default("en-US")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("workspace_settings")
+}
+
+model WorkspaceAISettings {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @unique @db.Uuid
+  provider    String    @default("fake")
+  apiKey      String?
+  model       String    @default("fake-v1")
+  temperature Float     @default(0.2)
+  maxTokens   Int       @default(800)
+  enabled     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("workspace_ai_settings")
 }
 
 model Delivery {

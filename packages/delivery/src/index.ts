@@ -76,7 +76,8 @@ export function createDeliveryProvider(input: {
   provider: string;
   apiKey?: string | null;
 }): DeliveryProvider {
-  if (input.provider === 'RESEND') {
+  const provider = input.provider.toLowerCase();
+  if (provider === 'resend') {
     if (!input.apiKey) {
       throw new Error('Resend API key is required for delivery.');
     }

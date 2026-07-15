@@ -58,18 +58,12 @@ export class OutreachService implements OnModuleDestroy {
     unknown,
     typeof OUTREACH_GENERATION_JOB
   >;
-  private readonly aiService: AIService;
 
   constructor(
     @Inject(SERVER_ENV) private readonly env: ServerEnv,
     private readonly prismaService: PrismaService,
     private readonly auditService: AuditService,
   ) {
-    this.aiService = new AIService({
-      provider: env.AI_PROVIDER,
-      model: env.AI_DEFAULT_MODEL,
-      apiKey: env.OPENAI_API_KEY,
-    });
     const connection: ConnectionOptions = {
       ...getRedisConnection(env),
       maxRetriesPerRequest: null,
@@ -478,7 +472,8 @@ export class OutreachService implements OnModuleDestroy {
         regenerationInstruction: input.dto.instruction ?? null,
       },
     );
-    const output = await this.aiService.regenerateOutreachMessage(context);
+    const aiService = await this.resolveWorkspaceAIService(input.workspaceId);
+    const output = await aiService.regenerateOutreachMessage(context);
     const nextVersion = previous.generationVersion + 1;
     const message = await this.prismaService.client.$transaction(async (tx) => {
       await tx.generatedMessage.updateMany({
@@ -663,6 +658,26 @@ export class OutreachService implements OnModuleDestroy {
 
   async onModuleDestroy() {
     await this.queue.close();
+  }
+
+  private async resolveWorkspaceAIService(workspaceId: string) {
+    const settings =
+      (await this.prismaService.client.workspaceAISettings.findUnique({
+        where: { workspaceId },
+      })) ??
+      (await this.prismaService.client.workspaceAISettings.create({
+        data: { workspaceId, provider: 'fake', model: 'fake-v1', enabled: true },
+      }));
+    if (!settings.enabled) {
+      throw new BadRequestException('Workspace AI provider is disabled.');
+    }
+    return new AIService({
+      provider: settings.provider === 'openai' ? 'openai' : 'fake',
+      model: settings.model,
+      apiKey: settings.apiKey,
+      temperature: settings.temperature,
+      maxTokens: settings.maxTokens,
+    });
   }
 
   private async resolveAudiencePeople(workspaceId: string, audience: AudienceDto) {

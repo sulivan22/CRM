@@ -49,10 +49,20 @@ export class DeliveriesService implements OnModuleDestroy {
     if (!outreach) {
       throw new NotFoundException('Outreach not found');
     }
-    if (!outreach.workspace.emailSettings) {
-      throw new BadRequestException('Workspace email settings are required.');
+    const emailSettings =
+      outreach.workspace.emailSettings ??
+      (await this.prismaService.client.workspaceEmailSettings.create({
+        data: {
+          workspaceId: input.workspaceId,
+          provider: 'fake',
+          fromName: outreach.workspace.name,
+          fromEmail: 'no-reply@example.test',
+          enabled: true,
+        },
+      }));
+    if (!emailSettings.enabled) {
+      throw new BadRequestException('Workspace email provider is disabled.');
     }
-    const emailSettings = outreach.workspace.emailSettings;
 
     const messages = await this.prismaService.client.generatedMessage.findMany({
       where: {

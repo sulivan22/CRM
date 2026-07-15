@@ -16,6 +16,7 @@ import { OutreachModule } from './outreach/outreach.module.js';
 import { DeliveriesModule } from './deliveries/deliveries.module.js';
 import { InboxModule } from './inbox/inbox.module.js';
 import { AIModule } from './ai/ai.module.js';
+import { SettingsModule } from './settings/settings.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { AIModule } from './ai/ai.module.js';
     DeliveriesModule,
     InboxModule,
     AIModule,
+    SettingsModule,
   ],
   controllers: [HealthController],
   providers: [serverEnvProvider, PrismaService, HealthService, JsonLogger, AllExceptionsFilter],

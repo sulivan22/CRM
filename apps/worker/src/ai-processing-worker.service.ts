@@ -9,22 +9,15 @@ import { SERVER_ENV } from './worker-env.js';
 export class AIProcessingWorkerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(AIProcessingWorkerService.name);
   private readonly worker: Worker<{ executionId: string }, unknown, string>;
-  private readonly aiService: AIService;
 
   constructor(@Inject(SERVER_ENV) private readonly env: ServerEnv) {
-    this.aiService = new AIService({
-      provider: env.AI_PROVIDER,
-      model: env.AI_DEFAULT_MODEL,
-      apiKey: env.OPENAI_API_KEY,
-    });
     const connection: ConnectionOptions = {
       ...getRedisConnection(env),
       maxRetriesPerRequest: null,
     };
     this.worker = new Worker(
       AI_PROCESSING_QUEUE,
-      (job: Job<{ executionId: string }>) =>
-        processAIExecutionJob(prisma, this.aiService, job.data.executionId),
+      (job: Job<{ executionId: string }>) => processAIExecutionJob(prisma, job.data.executionId),
       {
         connection,
         concurrency: env.WORKER_CONCURRENCY,
@@ -48,11 +41,7 @@ export class AIProcessingWorkerService implements OnModuleInit, OnModuleDestroy 
   }
 }
 
-export async function processAIExecutionJob(
-  db: PrismaClient,
-  aiService: AIService,
-  executionId: string,
-) {
+export async function processAIExecutionJob(db: PrismaClient, executionId: string) {
   const execution = await db.aIExecution.findUnique({ where: { id: executionId } });
   if (!execution) {
     throw new Error(`AI execution ${executionId} not found`);
@@ -74,6 +63,7 @@ export async function processAIExecutionJob(
     };
     const context = await buildAIContext(db, execution.workspaceId, input);
     const operation = execution.operation as AIOperation;
+    const aiService = await resolveWorkspaceAIService(db, execution.workspaceId);
     const result = await aiService.run(operation, context);
     const insightType = insightTypeFor(operation);
 
@@ -115,6 +105,24 @@ export async function processAIExecutionJob(
     });
     throw error;
   }
+}
+
+async function resolveWorkspaceAIService(db: PrismaClient, workspaceId: string) {
+  const settings =
+    (await db.workspaceAISettings.findUnique({ where: { workspaceId } })) ??
+    (await db.workspaceAISettings.create({
+      data: { workspaceId, provider: 'fake', model: 'fake-v1', enabled: true },
+    }));
+  if (!settings.enabled) {
+    throw new Error('Workspace AI provider is disabled.');
+  }
+  return new AIService({
+    provider: settings.provider === 'openai' ? 'openai' : 'fake',
+    model: settings.model,
+    apiKey: settings.apiKey,
+    temperature: settings.temperature,
+    maxTokens: settings.maxTokens,
+  });
 }
 
 async function buildAIContext(

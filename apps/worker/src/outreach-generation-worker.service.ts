@@ -9,14 +9,8 @@ import { SERVER_ENV } from './worker-env.js';
 export class OutreachGenerationWorkerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OutreachGenerationWorkerService.name);
   private readonly worker: Worker<{ generationJobId: string }, unknown, string>;
-  private readonly aiService: AIService;
 
   constructor(@Inject(SERVER_ENV) private readonly env: ServerEnv) {
-    this.aiService = new AIService({
-      provider: env.AI_PROVIDER,
-      model: env.AI_DEFAULT_MODEL,
-      apiKey: env.OPENAI_API_KEY,
-    });
     const connection: ConnectionOptions = {
       ...getRedisConnection(env),
       maxRetriesPerRequest: null,
@@ -24,7 +18,7 @@ export class OutreachGenerationWorkerService implements OnModuleInit, OnModuleDe
     this.worker = new Worker(
       OUTREACH_GENERATION_QUEUE,
       (job: Job<{ generationJobId: string }>) =>
-        processOutreachGenerationJob(prisma, this.aiService, this.env, job.data.generationJobId),
+        processOutreachGenerationJob(prisma, this.env, job.data.generationJobId),
       {
         connection,
         concurrency: env.WORKER_CONCURRENCY,
@@ -62,7 +56,6 @@ export class OutreachGenerationWorkerService implements OnModuleInit, OnModuleDe
 
 async function processOutreachGenerationJob(
   db: PrismaClient,
-  aiService: AIService,
   env: ServerEnv,
   generationJobId: string,
 ) {
@@ -72,7 +65,7 @@ async function processOutreachGenerationJob(
       outreach: {
         include: {
           instruction: true,
-          workspace: true,
+          workspace: { include: { aiSettings: true } },
         },
       },
     },
@@ -147,7 +140,9 @@ async function processOutreachGenerationJob(
             previousMessage: null,
             regenerationInstruction: null,
           };
-          const output = await aiService.generateOutreachMessage(context);
+          const output = await resolveWorkspaceAIService(db, generationJob.workspaceId).then(
+            (service) => service.generateOutreachMessage(context),
+          );
           await db.$transaction(async (tx) => {
             await tx.generatedMessage.create({
               data: {
@@ -252,5 +247,23 @@ async function processOutreachGenerationJob(
         },
       },
     });
+  });
+}
+
+async function resolveWorkspaceAIService(db: PrismaClient, workspaceId: string) {
+  const settings =
+    (await db.workspaceAISettings.findUnique({ where: { workspaceId } })) ??
+    (await db.workspaceAISettings.create({
+      data: { workspaceId, provider: 'fake', model: 'fake-v1', enabled: true },
+    }));
+  if (!settings.enabled) {
+    throw new Error('Workspace AI provider is disabled.');
+  }
+  return new AIService({
+    provider: settings.provider === 'openai' ? 'openai' : 'fake',
+    model: settings.model,
+    apiKey: settings.apiKey,
+    temperature: settings.temperature,
+    maxTokens: settings.maxTokens,
   });
 }

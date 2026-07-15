@@ -95,6 +95,13 @@ export async function processDeliveryJob(db: PrismaClient, deliveryId: string) {
   }
 
   const settings = delivery.workspace.emailSettings;
+  if (!settings.enabled) {
+    await db.delivery.update({
+      where: { id: delivery.id },
+      data: { status: 'FAILED', error: 'Workspace email provider is disabled.' },
+    });
+    throw new Error('Workspace email provider is disabled.');
+  }
   await db.delivery.update({
     where: { id: delivery.id },
     data: { status: 'SENDING', error: null, provider: settings.provider },

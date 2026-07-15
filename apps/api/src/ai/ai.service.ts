@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { AI_PROCESSING_JOB, AI_PROCESSING_QUEUE, PROMPT_VERSION, type AIOperation } from '@crm/ai';
 import { getRedisConnection, type ServerEnv } from '@crm/config';
 import { Prisma } from '@crm/database';
@@ -39,13 +45,17 @@ export class AIOrchestrationService implements OnModuleDestroy {
       throw new BadRequestException('Provide personId, conversationId, or instruction.');
     }
     await this.assertTargets(input.workspaceId, input.dto);
+    const settings = await this.resolveAISettings(input.workspaceId);
+    if (!settings.enabled) {
+      throw new BadRequestException('Workspace AI provider is disabled.');
+    }
     const execution = await this.prismaService.client.aIExecution.create({
       data: {
         workspaceId: input.workspaceId,
         actorUserId: input.actorUserId,
         operation: operationMap[input.operation],
-        provider: this.env.AI_PROVIDER,
-        model: this.env.AI_DEFAULT_MODEL,
+        provider: settings.provider,
+        model: settings.model,
         status: 'PENDING',
         promptVersion: PROMPT_VERSION,
         input: {
@@ -95,6 +105,17 @@ export class AIOrchestrationService implements OnModuleDestroy {
 
   async onModuleDestroy() {
     await this.queue.close();
+  }
+
+  private async resolveAISettings(workspaceId: string) {
+    return (
+      (await this.prismaService.client.workspaceAISettings.findUnique({
+        where: { workspaceId },
+      })) ??
+      (await this.prismaService.client.workspaceAISettings.create({
+        data: { workspaceId, provider: 'fake', model: 'fake-v1', enabled: true },
+      }))
+    );
   }
 
   private async assertTargets(workspaceId: string, dto: AIRequestDto) {
