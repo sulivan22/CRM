@@ -12,6 +12,7 @@ import { OrganizationsModule } from './organizations/organizations.module.js';
 import { PeopleModule } from './people/people.module.js';
 import { TagsModule } from './tags/tags.module.js';
 import { ImportsModule } from './imports/imports.module.js';
+import { OutreachModule } from './outreach/outreach.module.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ImportsModule } from './imports/imports.module.js';
     PeopleModule,
     TagsModule,
     ImportsModule,
+    OutreachModule,
   ],
   controllers: [HealthController],
   providers: [serverEnvProvider, PrismaService, HealthService, JsonLogger, AllExceptionsFilter],

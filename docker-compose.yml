@@ -6,11 +6,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crm_password}
       POSTGRES_DB: ${POSTGRES_DB:-crm}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crm} -d ${POSTGRES_DB:-crm}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-crm} -d ${POSTGRES_DB:-crm}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -19,11 +19,11 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ['redis-server', '--appendonly', 'yes']
     ports:
-      - "6379:6379"
+      - '6379:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,8 +50,11 @@ services:
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-12}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
+      AI_PROVIDER: ${AI_PROVIDER:-fake}
+      AI_DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-fake-v1}
+      OUTREACH_GENERATION_BATCH_SIZE: ${OUTREACH_GENERATION_BATCH_SIZE:-25}
     ports:
-      - "3001:3001"
+      - '3001:3001'
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,10 +63,10 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 10s
       timeout: 5s
@@ -91,6 +94,9 @@ services:
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-12}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-1}
+      AI_PROVIDER: ${AI_PROVIDER:-fake}
+      AI_DEFAULT_MODEL: ${AI_DEFAULT_MODEL:-fake-v1}
+      OUTREACH_GENERATION_BATCH_SIZE: ${OUTREACH_GENERATION_BATCH_SIZE:-25}
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,17 +114,17 @@ services:
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001}
       WEB_PORT: 3000
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 10s
       timeout: 5s

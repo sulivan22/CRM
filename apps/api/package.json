@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@crm/ai": "workspace:*",
     "@crm/config": "workspace:*",
     "@crm/database": "workspace:*",
     "@crm/types": "workspace:*",

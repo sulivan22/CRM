@@ -18,7 +18,10 @@ function env(): ServerEnv {
     AUTH_SESSION_TTL_SECONDS: 3600,
     AUTH_COOKIE_SECURE: false,
     PASSWORD_MIN_LENGTH: 12,
-    WORKER_CONCURRENCY: 1
+    WORKER_CONCURRENCY: 1,
+    AI_PROVIDER: 'fake',
+    AI_DEFAULT_MODEL: 'fake-v1',
+    OUTREACH_GENERATION_BATCH_SIZE: 25,
   };
 }
 
@@ -31,9 +34,9 @@ describe('SessionService', () => {
           create: (input: { data: { tokenHash: string } }) => {
             storedTokenHash = input.data.tokenHash;
             return Promise.resolve({ id: 'session-id', ...input.data });
-          }
-        }
-      }
+          },
+        },
+      },
     } as unknown as PrismaService;
     const service = new SessionService(env(), prisma);
 
